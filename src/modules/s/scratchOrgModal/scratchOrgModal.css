@@ -1,0 +1,28 @@
+:host {
+  position: fixed !important;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 7000 !important;
+  display: block;
+}
+.slds-modal {
+  display: block;
+  z-index: 7001 !important;
+}
+.slds-modal__container {
+  max-width: 70rem;
+  width: 70%;
+  z-index: 7002 !important;
+}
+.slds-form-element {
+  margin-bottom: 1rem;
+}
+.slds-form-element__label {
+  font-weight: 500;
+}
+.slds-input,
+.slds-select {
+  width: 100%;
+}
+.slds-backdrop {
+  z-index: 7000 !important;
+} 

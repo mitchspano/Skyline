@@ -17,14 +17,23 @@
 <template>
   <div class="slds-p-around_medium slds-text-color_default">
     <lightning-card title="Org Manager">
-      <lightning-button
-        label="Authenticate New Org"
-        variant="brand"
-        onclick={handleAuthOrg}
-        disabled={isLoading}
-        slot="actions"
-      >
-      </lightning-button>
+      <div slot="actions">
+        <lightning-button
+          label="Create Scratch Org"
+          variant="brand"
+          onclick={handleCreateScratchOrg}
+          disabled={isLoading}
+          class="slds-m-right_x-small"
+        >
+        </lightning-button>
+        <lightning-button
+          label="Authenticate New Org"
+          variant="brand"
+          onclick={handleAuthOrg}
+          disabled={isLoading}
+        >
+        </lightning-button>
+      </div>
 
       <template if:true={error}>
         <div
@@ -153,5 +162,14 @@
         </template>
       </template>
     </lightning-card>
+
+    <template if:true={showScratchOrgModal}>
+      <s-scratch-org-modal
+        dev-hubs={devHubs}
+        definition-file-options={definitionFileOptions}
+        onclose={handleScratchOrgModalClose}
+        oncreate={handleScratchOrgCreate}
+      ></s-scratch-org-modal>
+    </template>
   </div>
 </template>

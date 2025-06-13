@@ -1,0 +1,82 @@
+<template>
+  <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open" aria-modal="true" aria-labelledby="modal-heading-01">
+    <div class="slds-modal__container">
+      <!-- Modal Header -->
+      <header class="slds-modal__header">
+        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={handleCancel}>
+          <lightning-icon icon-name="utility:close" alternative-text="Close" variant="inverse" size="small"></lightning-icon>
+          <span class="slds-assistive-text">Close</span>
+        </button>
+        <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Create Scratch Org</h2>
+      </header>
+
+      <!-- Modal Body -->
+      <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+        <template if:true={error}>
+          <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+            <span class="slds-assistive-text">error</span>
+            <h2>{error}</h2>
+          </div>
+        </template>
+
+        <div class="slds-form slds-form_horizontal">
+          <!-- Dev Hub Selection -->
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="devHub">Dev Hub</label>
+            <div class="slds-form-element__control">
+              <div class="slds-select_container">
+                <select id="devHub" class="slds-select" onchange={handleDevHubChange}>
+                  <option value="">Select a Dev Hub</option>
+                  <template for:each={devHubOptions} for:item="option">
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  </template>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Org Alias -->
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="orgAlias">Org Alias</label>
+            <div class="slds-form-element__control">
+              <input type="text" id="orgAlias" class="slds-input" value={orgAlias} onchange={handleAliasChange} />
+            </div>
+          </div>
+
+          <!-- Definition File -->
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="definitionFile">Definition File</label>
+            <div class="slds-form-element__control">
+              <template if:true={hasDefinitionFileOptions}>
+                <select id="definitionFile" class="slds-select" value={definitionFile} onchange={handleDefinitionFileChange}>
+                  <template for:each={definitionFileOptions} for:item="file">
+                    <option key={file} value={file}>{file}</option>
+                  </template>
+                </select>
+              </template>
+              <template if:false={hasDefinitionFileOptions}>
+                <div class="slds-text-color_error">No valid definition files found in workspace.</div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Duration (Days) -->
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="days">Duration (Days)</label>
+            <div class="slds-form-element__control">
+              <input type="number" id="days" class="slds-input" min="1" max="30" value={days} onchange={handleDaysChange} />
+            </div>
+            <div class="slds-form-element__help">Enter a value from 1 to 30</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <footer class="slds-modal__footer">
+        <button class="slds-button slds-button_neutral" onclick={handleCancel}>Cancel</button>
+        <button class="slds-button slds-button_brand" onclick={handleSubmit} disabled={isCreateDisabled}>Create</button>
+      </footer>
+    </div>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+  </section>
+</template> 

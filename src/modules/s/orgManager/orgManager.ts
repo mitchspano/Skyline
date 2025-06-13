@@ -77,6 +77,8 @@ export default class OrgManager extends CliElement {
   @track otherOrgs: OrgInfo[] = [];
   @track isLoading = false;
   @track error: string | null = null;
+  @track showScratchOrgModal = false;
+  @track definitionFileOptions: string[] = [];
 
   connectedCallback() {
     this.loadOrgs();
@@ -179,6 +181,79 @@ export default class OrgManager extends CliElement {
     } catch (error) {
       this.handleError(
         error instanceof Error ? error.message : "Failed to open org",
+        "Error"
+      );
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  async handleCreateScratchOrg() {
+    if (this.devHubs.length === 0) {
+      this.handleError("No Dev Hub found. Please authenticate a Dev Hub org first.", "Error");
+      return;
+    }
+    this.isLoading = true;
+    try {
+      const result = await this.executeCommand(`grep -rl '"orgName"' . --include='*.json'`);
+      if (result.errorCode) {
+        throw new Error(result.stderr);
+      }
+      this.definitionFileOptions = result.stdout
+        ? result.stdout.split('\n')
+            .filter((f: string) => f.trim() !== "")
+            .map((f: string) => f.replace(/^\.?\/?/, ""))
+        : [];
+    } catch (error) {
+      this.definitionFileOptions = [];
+    } finally {
+      this.isLoading = false;
+      this.showScratchOrgModal = true;
+    }
+  }
+
+  handleScratchOrgModalClose() {
+    this.showScratchOrgModal = false;
+  }
+
+  async handleScratchOrgCreate(event: CustomEvent) {
+    const { devHub, alias, definitionFile } = event.detail;
+    try {
+      this.isLoading = true;
+      this.showScratchOrgModal = false;
+
+      const result = await this.executeCommand(
+        `sf org create scratch --target-dev-hub ${devHub} --alias ${alias} --definition-file ${definitionFile} --json`
+      );
+
+      if (result.errorCode) {
+        throw new Error(result.stderr);
+      }
+
+      if (!result.stdout) {
+        throw new Error("No output received from scratch org creation");
+      }
+
+      const scratchOrgResult = JSON.parse(result.stdout);
+      if (scratchOrgResult.status !== 0) {
+        throw new Error(
+          scratchOrgResult.warnings?.join(", ") || "Failed to create scratch org"
+        );
+      }
+
+      Toast.show(
+        { 
+          label: "Success", 
+          message: "Scratch org created successfully", 
+          variant: "success" 
+        }, 
+        this
+      );
+
+      await this.loadOrgs();
+    } catch (error) {
+      this.handleError(
+        error instanceof Error ? error.message : "Failed to create scratch org",
         "Error"
       );
     } finally {
