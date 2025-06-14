@@ -74,9 +74,37 @@ const indexConfig = {
   },
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "index.js"
+    filename: "[name].[contenthash].js",
+    chunkFilename: "[name].[contenthash].js",
+    publicPath: './'
   },
-  mode: "development",
+  mode: "production",
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      maxInitialRequests: Infinity,
+      minSize: 20000,
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name(module) {
+            const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
+            return `vendor.${packageName.replace('@', '')}`;
+          },
+        },
+        lwc: {
+          test: /[\\/]src[\\/]modules[\\/]s[\\/].*[\\/].*\.(ts|js)$/,
+          name(module) {
+            const componentName = module.context.match(/[\\/]s[\\/](.*?)[\\/]/)[1];
+            return `lwc.${componentName}`;
+          },
+          chunks: 'async',
+          priority: 10
+        }
+      },
+    },
+    minimize: true,
+  },
   plugins: [
     // @ts-ignore
     new LwcWebpackPlugin(),
@@ -100,7 +128,14 @@ const indexConfig = {
         {
           from: "node_modules/@salesforce-ux/design-system/assets",
           to: "assets",
-          noErrorOnMissing: true
+          noErrorOnMissing: true,
+          transform(content, absoluteFilename) {
+            // Only copy minified versions of CSS files
+            if (absoluteFilename.endsWith('.css') && !absoluteFilename.endsWith('.min.css')) {
+              return Buffer.from('');
+            }
+            return content;
+          }
         },
         {
           from: "src/templates",
