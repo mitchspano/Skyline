@@ -190,17 +190,23 @@ export default class OrgManager extends CliElement {
 
   async handleCreateScratchOrg() {
     if (this.devHubs.length === 0) {
-      this.handleError("No Dev Hub found. Please authenticate a Dev Hub org first.", "Error");
+      this.handleError(
+        "No Dev Hub found. Please authenticate a Dev Hub org first.",
+        "Error"
+      );
       return;
     }
     this.isLoading = true;
     try {
-      const result = await this.executeCommand(`grep -rl '"orgName"' . --include='*.json'`);
+      const result = await this.executeCommand(
+        `grep -rl '"orgName"' . --include='*.json'`
+      );
       if (result.errorCode) {
         throw new Error(result.stderr);
       }
       this.definitionFileOptions = result.stdout
-        ? result.stdout.split('\n')
+        ? result.stdout
+            .split("\n")
             .filter((f: string) => f.trim() !== "")
             .map((f: string) => f.replace(/^\.?\/?/, ""))
         : [];
@@ -237,16 +243,17 @@ export default class OrgManager extends CliElement {
       const scratchOrgResult = JSON.parse(result.stdout);
       if (scratchOrgResult.status !== 0) {
         throw new Error(
-          scratchOrgResult.warnings?.join(", ") || "Failed to create scratch org"
+          scratchOrgResult.warnings?.join(", ") ||
+            "Failed to create scratch org"
         );
       }
 
       Toast.show(
-        { 
-          label: "Success", 
-          message: "Scratch org created successfully", 
-          variant: "success" 
-        }, 
+        {
+          label: "Success",
+          message: "Scratch org created successfully",
+          variant: "success"
+        },
         this
       );
 

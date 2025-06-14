@@ -1,6 +1,9 @@
 :host {
   position: fixed !important;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 7000 !important;
   display: block;
 }
@@ -25,4 +28,4 @@
 }
 .slds-backdrop {
   z-index: 7000 !important;
-} 
+}

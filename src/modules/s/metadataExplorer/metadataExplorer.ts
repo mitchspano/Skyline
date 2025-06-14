@@ -339,9 +339,8 @@ export default class MetadataExplorer extends CliElement {
       this.orgConnectionInfo = JSON.parse(result.stdout);
       const command = COMMANDS.listMetadataTypes;
       try {
-        const metadataTypesResult = await this.executeCommandWithSpinner(
-          command
-        );
+        const metadataTypesResult =
+          await this.executeCommandWithSpinner(command);
         this.handleMetadataTypes(metadataTypesResult);
       } catch (error) {
         this.handleError("Failed to fetch metadata types", "Error");

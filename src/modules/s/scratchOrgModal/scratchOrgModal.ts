@@ -16,7 +16,7 @@ export default class ScratchOrgModal extends LightningElement {
   }
 
   get devHubOptions() {
-    return this.devHubs.map(hub => ({
+    return this.devHubs.map((hub) => ({
       label: `${hub.alias} (${hub.username})`,
       value: hub.alias
     }));
@@ -103,4 +103,4 @@ export default class ScratchOrgModal extends LightningElement {
       !this.error
     );
   }
-} 
+}
