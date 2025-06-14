@@ -66,7 +66,10 @@ export default class App extends LightningElement {
   @track currentPage = Pages.home;
   @track config: any;
   @track loadedComponents: Set<string> = new Set();
-  private static pendingResolvers: Map<string, (result: ExecuteResult) => void> = new Map();
+  private static pendingResolvers: Map<
+    string,
+    (result: ExecuteResult) => void
+  > = new Map();
 
   /**
    * Constructor for the App component. Sets the singleton instance.
@@ -152,7 +155,7 @@ export default class App extends LightningElement {
   async handlePageNavigation(event: CustomEvent) {
     const newPage = event.detail;
     this.currentPage = newPage;
-    
+
     // Load the component if it hasn't been loaded yet
     const componentName = this.getComponentNameForPage(newPage);
     if (componentName && !this.loadedComponents.has(componentName)) {
@@ -173,15 +176,15 @@ export default class App extends LightningElement {
   private getComponentNameForPage(page: Pages): string | null {
     switch (page) {
       case Pages.home:
-        return 'home';
+        return "home";
       case Pages.metadataExplorer:
-        return 'metadataExplorer';
+        return "metadataExplorer";
       case Pages.repoConfig:
-        return 'repoConfig';
+        return "repoConfig";
       case Pages.pipeline:
-        return 'pipeline';
+        return "pipeline";
       case Pages.orgManager:
-        return 'orgManager';
+        return "orgManager";
       default:
         return null;
     }
