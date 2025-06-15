@@ -3,6 +3,8 @@ name: CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+      - "extension/**"
 
 jobs:
   verify:
@@ -18,10 +20,12 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
+        working-directory: ./extension
         run: npm ci
 
       - name: Check formatting
-        run: npx prettier --check . --ignore-path .gitignore
+        run: npx prettier --check ./extension --ignore-path .gitignore
 
       - name: Compile
+        working-directory: ./extension
         run: npm run compile

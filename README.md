@@ -1,140 +1,57 @@
-# Skyline
+# Skyline DevOps
 
-## Overview
+Skyline DevOps is a comprehensive Salesforce DevOps toolkit that combines a VS Code extension with CLI tools to streamline Salesforce development workflows.
 
-Skyline serves as a bridge between your local development environment and Salesforce orgs, enabling teams to:
+## Project Structure
 
-- Manage metadata across different environments seamlessly
-- Configure repository settings for different branches
-- Explore and retrieve Salesforce metadata through an intuitive interface
-- Validate system prerequisites and project setup
+The project is organized into multiple components:
 
-## Features
+### VS Code Extension (`/extension`)
 
-### 🏠 Home Dashboard
+A Visual Studio Code extension that provides:
 
-- System health checks and setup validation
-- Automatic verification of essential tools:
-  - Git installation
-  - Salesforce CLI
-  - Repository configuration
-- Visual progress indicators for quick status overview
+- Intuitive UI for managing Salesforce metadata
+- Repository configuration management
+- Pipeline visualization and management
+- Environment configuration tools
 
-### 🔍 Metadata Explorer
+### CLI Tools (Coming Soon)
 
-- User-friendly interface for browsing Salesforce metadata
-- Advanced filtering capabilities:
-  - Component name search
-  - Last modified date ranges
-  - Modified by user
-- Hierarchical metadata visualization
-- One-click metadata retrieval
-- Timezone-aware date handling
+Future components will include:
 
-### ⚙️ Pipeline Configuration
+- Command-line tools for automation
+- CI/CD pipeline integration scripts
+- Environment management utilities
+- Deployment automation tools
 
-- Branch-specific environment configurations
-- Visual configuration editor
-- Environment validation
-- Deployment settings management
-- Test level configuration per environment
+## Development Setup
 
-## Who Is This For?
+### Prerequisites
 
-- **Developers**: Streamline your workflow with quick access to metadata and repository settings
-- **Administrators**: Interact with metadata and configurations through a familiar interface
-- **Technical Leads**: Manage environment configurations and deployment settings
-- **Team Members**: Collaborate effectively with a unified tool for org management
+- Node.js (v20 or later)
+- Visual Studio Code or Cursor
+- Git
 
-## Prerequisites
+### Local Development
 
-Before using Skyline, ensure you have:
-
-- Visual Studio Code 1.95.0 or later
-- Git installed locally
-- Salesforce CLI (sf) installed
-- A Git repository initialized in your project
-- Node.js and npm
-
-## Installation
-
-1. Download the VSIX file from the releases page
-2. Open VS Code
-3. Go to Extensions view (`Ctrl+Shift+X` or `Cmd+Shift+X`)
-4. Click the "..." menu at the top of the Extensions view
-5. Select "Install from VSIX..."
-6. Choose the downloaded VSIX file
-
-## Usage
-
-1. Open the command palette (`Ctrl+Shift+P` or `Cmd+Shift+P`)
-2. Type "Skyline" and select it to launch
-3. The Skyline interface will open in a new panel
-
-### Metadata Explorer
-
-1. Select a metadata type from the dropdown
-2. Use filters to narrow down results:
-   - Search by component name
-   - Filter by date range
-   - Filter by last modified user
-3. Select metadata components
-4. Click "Retrieve" to download to your project
-
-### Pipeline Configuration
-
-1. Select or create a branch configuration
-2. Configure environment-specific settings:
-   - Instance URLs
-   - Authentication details
-   - Test levels for deployments
-3. Save and manage configurations per branch
-
-## Development
-
-### Setup
+1. Clean and install dependencies:
 
 ```bash
-# Install dependencies
-npm install
-
-# Compile the extension
-npm run compile
-
-# Watch for changes during development
-npm run watch
+[ -d "extension/dist" ] && rm -rf extension/dist
+[ -d "extension/node_modules" ] && rm -rf extension/node_modules
+npm --prefix extension install
 ```
 
-### Project Structure
+2. Start the extension in development mode:
 
-```
-src/
-├── extension.ts          # VS Code extension entry point
-├── index.ts             # LWC application entry point
-├── modules/             # LWC components
-│   └── s/
-│       ├── app/         # Main application component
-│       ├── home/        # Home dashboard
-│       ├── metadataExplorer/  # Metadata browser
-│       └── repoConfig/  # Pipeline configuration
-├── test/                # Test files
-└── types/               # TypeScript type definitions
+```bash
+# Terminal 1: Start the extension watcher
+npm --prefix extension run watch
+
+# Terminal 2: Launch VS Code/Cursor with the extension
+cursor --inspect-extensions --extensionDevelopmentPath=$(pwd)/extension
 ```
 
-## Contributing
+## License
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Dependencies
-
-- [@salesforce-ux/design-system](https://www.npmjs.com/package/@salesforce-ux/design-system) - ^2.25.3
-- [lightning-base-components](https://www.npmjs.com/package/lightning-base-components) - ^1.22.1-alpha
-- Various development dependencies for TypeScript, Webpack, and testing
-
-## Support
-
-For support, please open an issue in the GitHub repository or contact the maintainers.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.

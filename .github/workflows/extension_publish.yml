@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "extension/**"
 
 jobs:
   publish:
@@ -15,6 +17,7 @@ jobs:
 
       - name: Check version change
         id: version_check
+        working-directory: ./extension
         run: |
           PREV_VERSION=$(git show HEAD^:package.json | jq -r .version)
           CURRENT_VERSION=$(jq -r .version package.json)
@@ -34,16 +37,19 @@ jobs:
 
       - name: Install dependencies
         if: steps.version_check.outputs.changed == 'true'
+        working-directory: ./extension
         run: npm install
 
       - name: Publish to VS Code Marketplace
         if: steps.version_check.outputs.changed == 'true'
+        working-directory: ./extension
         run: |
           npm install -g @vscode/vsce
           vsce publish -p ${{ secrets.VSCE_TOKEN }}
 
       - name: Publish to Open VSX
         if: steps.version_check.outputs.changed == 'true'
+        working-directory: ./extension
         run: |
           npm install -g ovsx
           ovsx publish -p ${{ secrets.OPEN_VSX_TOKEN }}
