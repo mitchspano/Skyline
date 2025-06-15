@@ -23,7 +23,7 @@
  */
 
 import { LightningElement, track } from "lwc";
-import { lazyLoadComponent } from "../utils/lazyLoader";
+import CLIElement from "../cliElement/cliElement";
 import { v4 as uuidv4 } from "uuid";
 
 declare global {
@@ -65,7 +65,6 @@ export default class App extends LightningElement {
   private static vscode = eval("acquireVsCodeApi()");
   @track currentPage = Pages.home;
   @track config: any;
-  @track loadedComponents: Set<string> = new Set();
   private static pendingResolvers: Map<
     string,
     (result: ExecuteResult) => void
@@ -149,45 +148,11 @@ export default class App extends LightningElement {
 
   /**
    * Handles page navigation events.
-   * Updates the current page and loads the component if needed.
+   * Updates the current page based on the event detail.
    * @param event The page navigation event.
    */
-  async handlePageNavigation(event: CustomEvent) {
-    const newPage = event.detail;
-    this.currentPage = newPage;
-
-    // Load the component if it hasn't been loaded yet
-    const componentName = this.getComponentNameForPage(newPage);
-    if (componentName && !this.loadedComponents.has(componentName)) {
-      try {
-        await lazyLoadComponent(componentName);
-        this.loadedComponents.add(componentName);
-      } catch (error) {
-        console.error(`Failed to load component ${componentName}:`, error);
-      }
-    }
-  }
-
-  /**
-   * Maps a page to its corresponding component name.
-   * @param page The page to map
-   * @returns The component name
-   */
-  private getComponentNameForPage(page: Pages): string | null {
-    switch (page) {
-      case Pages.home:
-        return "home";
-      case Pages.metadataExplorer:
-        return "metadataExplorer";
-      case Pages.repoConfig:
-        return "repoConfig";
-      case Pages.pipeline:
-        return "pipeline";
-      case Pages.orgManager:
-        return "orgManager";
-      default:
-        return null;
-    }
+  handlePageNavigation(event: CustomEvent) {
+    this.currentPage = event.detail;
   }
 
   /**

@@ -4,7 +4,7 @@
   "description": "A Salesforce DevOps Tool",
   "icon": "images/Skyline_logo.png",
   "publisher": "mitchspano",
-  "version": "0.0.7",
+  "version": "0.0.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/mitchspano/skyline"
@@ -54,7 +54,6 @@
     "@lwc/module-resolver": "^8.8.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
-    "@types/svgo": "^2.6.4",
     "@types/vscode": "^1.95.0",
     "@typescript-eslint/eslint-plugin": "^6.4.1",
     "@typescript-eslint/parser": "^6.4.1",
@@ -66,8 +65,6 @@
     "lwc": "^8.8.0",
     "lwc-webpack-plugin": "^3.1.0",
     "mocha": "^10.2.0",
-    "svgo": "^3.3.2",
-    "svgo-loader": "^4.0.0",
     "ts-loader": "^9.4.4",
     "typescript": "^5.1.6",
     "webpack": "^5.96.1",
