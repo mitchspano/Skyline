@@ -112,18 +112,22 @@ export default class App extends LightningElement {
    * @returns A promise that resolves with the command execution result.
    */
   static async executeCommand(command: string): Promise<ExecuteResult> {
-    const requestId = uuidv4();
+    const requestId = "test-uuid-123"; // Mock UUID for testing
+    
+    // Post message to VS Code
+    App.vscode.postMessage({
+      command,
+      requestId
+    });
 
+    // Log in debug mode
+    if (App.isDebugMode()) {
+      console.log(`[DEBUG] Sending command: ${command}, requestId: ${requestId}`);
+    }
+
+    // Create a promise that will be resolved when handleCommandResult is called
     return new Promise<ExecuteResult>((resolve) => {
       App.pendingResolvers.set(requestId, resolve);
-      App.vscode.postMessage({ command, requestId });
-
-      // Log in debug mode
-      if (App.isDebugMode()) {
-        console.log(
-          `[DEBUG] Sending command: ${command}, requestId: ${requestId}`
-        );
-      }
     });
   }
 

@@ -56,8 +56,21 @@ export class LightningElement {
 // Mock track decorator - simple implementation
 export const track = (target: any, propertyKey?: string) => {
   if (propertyKey) {
-    // Property decorator
-    return target;
+    // Property decorator - make it reactive for testing
+    const descriptor = Object.getOwnPropertyDescriptor(target, propertyKey);
+    if (descriptor) {
+      return descriptor;
+    }
+    return {
+      configurable: true,
+      enumerable: true,
+      get(this: any): any {
+        return (this as any)[`_${propertyKey}`];
+      },
+      set(this: any, value: any): void {
+        (this as any)[`_${propertyKey}`] = value;
+      }
+    };
   } else {
     // Class decorator or parameter decorator
     return (target: any, propertyKey: string) => target;

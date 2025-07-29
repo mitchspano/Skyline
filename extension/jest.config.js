@@ -7,8 +7,8 @@ module.exports = {
     '^.+\\.ts$': ['ts-jest', {
       tsconfig: {
         ...require('./tsconfig.json').compilerOptions,
-        experimentalDecorators: false,
-        emitDecoratorMetadata: false
+        experimentalDecorators: true,
+        emitDecoratorMetadata: true
       },
     }],
   },
@@ -25,6 +25,13 @@ module.exports = {
     '^../../modules/s/app/app$': '<rootDir>/src/test/mocks/app.ts',
     '^../../modules/s/cliElement/cliElement$': '<rootDir>/src/test/mocks/cliElement.ts',
     '^../../modules/s/header/header$': '<rootDir>/src/test/mocks/header.ts',
+    '^../../modules/s/home/home$': '<rootDir>/src/test/mocks/home.ts',
+    '^../../modules/s/orgListItem/orgListItem$': '<rootDir>/src/test/mocks/orgListItem.ts',
+    '^../../modules/s/orgManager/orgManager$': '<rootDir>/src/test/mocks/orgManager.ts',
+    '^../../modules/s/pipeline/pipeline$': '<rootDir>/src/test/mocks/pipeline.ts',
+    '^../../modules/s/repoConfig/repoConfig$': '<rootDir>/src/test/mocks/repoConfig.ts',
+    '^../../modules/s/metadataExplorer/metadataExplorer$': '<rootDir>/src/test/mocks/metadataExplorer.ts',
+    '^lightning-base-components/src/lightning/toast/toast.js$': '<rootDir>/src/test/mocks/toast.ts',
   },
   testPathIgnorePatterns: [
     '/node_modules/',
