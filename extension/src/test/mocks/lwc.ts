@@ -48,10 +48,34 @@ export class LightningElement {
 }
 
 // Mock track decorator - simple implementation
-export const track = (target: any, propertyKey: string) => target;
+export const track = (target: any, propertyKey?: string) => {
+  if (propertyKey) {
+    // Property decorator
+    return target;
+  } else {
+    // Class decorator or parameter decorator
+    return (target: any, propertyKey: string) => target;
+  }
+};
 
 // Mock api decorator - simple implementation
-export const api = (target: any, propertyKey: string) => target;
+export const api = (target: any, propertyKey?: string) => {
+  if (propertyKey) {
+    // Property decorator
+    return target;
+  } else {
+    // Class decorator or parameter decorator
+    return (target: any, propertyKey: string) => target;
+  }
+};
 
 // Mock wire decorator - simple implementation
-export const wire = (target: any, propertyKey: string) => target; 
+export const wire = (target: any, propertyKey?: string) => {
+  if (propertyKey) {
+    // Property decorator
+    return target;
+  } else {
+    // Class decorator or parameter decorator
+    return (target: any, propertyKey: string) => target;
+  }
+}; 
