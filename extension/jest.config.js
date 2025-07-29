@@ -31,6 +31,7 @@ module.exports = {
     '^../../modules/s/pipeline/pipeline$': '<rootDir>/src/test/mocks/pipeline.ts',
     '^../../modules/s/repoConfig/repoConfig$': '<rootDir>/src/test/mocks/repoConfig.ts',
     '^../../modules/s/metadataExplorer/metadataExplorer$': '<rootDir>/src/test/mocks/metadataExplorer.ts',
+    '^../../modules/s/scratchOrgModal/scratchOrgModal$': '<rootDir>/src/test/mocks/scratchOrgModal.ts',
     '^lightning-base-components/src/lightning/toast/toast.js$': '<rootDir>/src/test/mocks/toast.ts',
   },
   testPathIgnorePatterns: [
