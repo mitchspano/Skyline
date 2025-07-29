@@ -15,4 +15,43 @@
  */
 
 // Mock LWC
-export const createElement = jest.fn(); 
+export const createElement = jest.fn();
+
+// Mock LightningElement base class
+export class LightningElement {
+  constructor() {
+    // Mock constructor
+  }
+
+  // Mock template property
+  template = null;
+
+  // Mock render method
+  render() {
+    return this.template;
+  }
+
+  // Mock connectedCallback
+  connectedCallback() {
+    // Mock lifecycle method
+  }
+
+  // Mock disconnectedCallback
+  disconnectedCallback() {
+    // Mock lifecycle method
+  }
+
+  // Mock renderedCallback
+  renderedCallback() {
+    // Mock lifecycle method
+  }
+}
+
+// Mock track decorator - simple implementation
+export const track = (target: any, propertyKey: string) => target;
+
+// Mock api decorator - simple implementation
+export const api = (target: any, propertyKey: string) => target;
+
+// Mock wire decorator - simple implementation
+export const wire = (target: any, propertyKey: string) => target; 
