@@ -803,8 +803,12 @@ export default class MetadataExplorer extends CliElement {
       // Sort folders alphabetically
       rootRow._children!.sort((a, b) => {
         // Put "Unfiled Public Classic Email Templates" at the end
-        if (a.label === "Unfiled Public Classic Email Templates") return 1;
-        if (b.label === "Unfiled Public Classic Email Templates") return -1;
+        if (a.label === "Unfiled Public Classic Email Templates") {
+          return 1;
+        }
+        if (b.label === "Unfiled Public Classic Email Templates") {
+          return -1;
+        }
         return a.label!.localeCompare(b.label!);
       });
 

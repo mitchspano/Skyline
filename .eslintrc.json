@@ -7,8 +7,34 @@
   },
   "plugins": ["@typescript-eslint"],
   "rules": {
-    "@typescript-eslint/naming-convention": "warn",
-    "@typescript-eslint/semi": "warn",
+    "@typescript-eslint/naming-convention": [
+      "warn",
+      {
+        "selector": "default",
+        "format": ["camelCase"]
+      },
+      {
+        "selector": "variable",
+        "format": ["camelCase", "UPPER_CASE"]
+      },
+      {
+        "selector": "parameter",
+        "format": ["camelCase"]
+      },
+      {
+        "selector": "memberLike",
+        "modifiers": ["private"],
+        "format": ["camelCase"]
+      },
+      {
+        "selector": "typeLike",
+        "format": ["PascalCase"]
+      },
+      {
+        "selector": "objectLiteralProperty",
+        "format": ["camelCase", "UPPER_CASE", "PascalCase"]
+      }
+    ],
     "curly": "warn",
     "eqeqeq": "warn",
     "no-throw-literal": "warn",

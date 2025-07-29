@@ -7,8 +7,17 @@
     "sourceMap": true,
     "rootDir": "src",
     "strict": true,
+    "types": ["jest", "node"],
     "paths": {
       "s/app": ["./modules/s/app/app.ts"]
     }
-  }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "out"
+  ]
 }
