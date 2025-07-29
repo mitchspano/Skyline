@@ -45,6 +45,12 @@ export class LightningElement {
   renderedCallback() {
     // Mock lifecycle method
   }
+
+  // Mock dispatchEvent method
+  dispatchEvent(event: CustomEvent) {
+    // Mock implementation for testing
+    return true;
+  }
 }
 
 // Mock track decorator - simple implementation

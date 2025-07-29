@@ -23,6 +23,8 @@ module.exports = {
     '^vscode$': '<rootDir>/src/test/mocks/vscode.ts',
     '^child_process$': '<rootDir>/src/test/mocks/child_process.ts',
     '^../../modules/s/app/app$': '<rootDir>/src/test/mocks/app.ts',
+    '^../../modules/s/cliElement/cliElement$': '<rootDir>/src/test/mocks/cliElement.ts',
+    '^../../modules/s/header/header$': '<rootDir>/src/test/mocks/header.ts',
   },
   testPathIgnorePatterns: [
     '/node_modules/',
