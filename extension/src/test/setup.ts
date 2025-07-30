@@ -38,7 +38,7 @@ const mockVscode = {
 
 // Mock extensionUri with fsPath
 const mockExtensionUri = {
-  fsPath: '/test/extension/path'
+  fsPath: "/test/extension/path"
 };
 
 // Mock child_process
@@ -57,7 +57,7 @@ const mockLwc = {
 (global as any).exec = mockChildProcess.exec;
 
 // Mock document and window properly
-Object.defineProperty(global, 'document', {
+Object.defineProperty(global, "document", {
   value: {
     addEventListener: jest.fn(),
     body: {
@@ -67,7 +67,7 @@ Object.defineProperty(global, 'document', {
   writable: true
 });
 
-Object.defineProperty(global, 'window', {
+Object.defineProperty(global, "window", {
   value: {
     addEventListener: jest.fn()
   },
@@ -77,9 +77,9 @@ Object.defineProperty(global, 'window', {
 // Mock modules are now handled by moduleNameMapping in jest.config.js
 
 // Setup DOM environment for JSDOM
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -87,22 +87,22 @@ Object.defineProperty(window, 'matchMedia', {
     removeListener: jest.fn(), // deprecated
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
+    dispatchEvent: jest.fn()
+  }))
 });
 
 // Mock ResizeObserver
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
-  disconnect: jest.fn(),
+  disconnect: jest.fn()
 }));
 
 // Mock IntersectionObserver
 global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
-  disconnect: jest.fn(),
+  disconnect: jest.fn()
 }));
 
 // Setup console mocks to reduce noise in tests
@@ -112,5 +112,5 @@ global.console = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: jest.fn(),
-}; 
+  error: jest.fn()
+};

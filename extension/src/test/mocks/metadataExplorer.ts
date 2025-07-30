@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { LightningElement } from 'lwc';
+import { LightningElement } from "lwc";
 
 export default class MetadataExplorer extends LightningElement {
   selectedMetadataType?: any;
@@ -44,8 +44,14 @@ export default class MetadataExplorer extends LightningElement {
     if (!this.orgConnectionInfo && !this.isDebugMode) {
       // Don't call executeCommand in the mock, just set the property directly
       // But check if there's an error in the command result
-      const orgDisplayResult = await this.executeCommand("sf org display --json");
-      if (orgDisplayResult && orgDisplayResult.stdout && orgDisplayResult.errorCode === 0) {
+      const orgDisplayResult = await this.executeCommand(
+        "sf org display --json"
+      );
+      if (
+        orgDisplayResult &&
+        orgDisplayResult.stdout &&
+        orgDisplayResult.errorCode === 0
+      ) {
         this.orgConnectionInfo = { username: "test@example.com" };
       }
     }
@@ -68,7 +74,7 @@ export default class MetadataExplorer extends LightningElement {
   async handleMetadataTypeSelection(event: CustomEvent) {
     const selectedType = event.detail.value;
     this.selectedMetadataType = { xmlName: selectedType };
-    
+
     if (selectedType === "CustomObject") {
       this.folderBasedMetadataItems.set(selectedType, []);
     } else {
@@ -81,8 +87,13 @@ export default class MetadataExplorer extends LightningElement {
     const metadataItem = event.detail;
     if (metadataItem && metadataItem.name && metadataItem.isExpanded) {
       // Check if it's a custom object
-      if (metadataItem.name.includes('__c') || metadataItem.name.includes('TestObject__c')) {
-        await this.executeCommand("sf data query --query \"SELECT QualifiedApiName, Label, DataType FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('TestObject__c')\" --json");
+      if (
+        metadataItem.name.includes("__c") ||
+        metadataItem.name.includes("TestObject__c")
+      ) {
+        await this.executeCommand(
+          "sf data query --query \"SELECT QualifiedApiName, Label, DataType FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('TestObject__c')\" --json"
+        );
         this.refresh();
       }
     }
@@ -91,7 +102,9 @@ export default class MetadataExplorer extends LightningElement {
   async handleRetrieveClick() {
     // Only execute if rows are selected
     if (this.selectedRows && this.selectedRows.length > 0) {
-      await this.executeCommand("sf project retrieve start --metadata ApexClass:TestClass,CustomObject:TestObject__c --json");
+      await this.executeCommand(
+        "sf project retrieve start --metadata ApexClass:TestClass,CustomObject:TestObject__c --json"
+      );
       this.refresh();
     }
   }
@@ -138,10 +151,10 @@ export default class MetadataExplorer extends LightningElement {
     if (!this.selectedRows || this.selectedRows.length === 0) {
       return undefined;
     }
-    
+
     return this.selectedRows
-      .filter(row => row.fullName)
-      .map(row => `${row.type}:${row.fullName}`);
+      .filter((row) => row.fullName)
+      .map((row) => `${row.type}:${row.fullName}`);
   }
 
   get renderRetrieve() {
@@ -152,7 +165,7 @@ export default class MetadataExplorer extends LightningElement {
     if (!this.metadataTypes?.result?.metadataObjects) {
       return undefined;
     }
-    
+
     return this.metadataTypes.result.metadataObjects
       .map((type: any) => ({ label: type.xmlName, value: type.xmlName }))
       .sort((a: any, b: any) => a.label.localeCompare(b.label));
@@ -175,4 +188,4 @@ export default class MetadataExplorer extends LightningElement {
   // Mock executeCommand method for testing
   executeCommand = jest.fn();
   refresh = jest.fn();
-} 
+}

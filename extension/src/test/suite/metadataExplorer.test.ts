@@ -35,10 +35,21 @@ jest.mock("../../modules/s/metadataExplorer/sfCli", () => ({
   COMMANDS: {
     orgDisplay: "sf org display --json",
     listMetadataTypes: "sf org list metadata-types --json",
-    listMetadataOfType: jest.fn((type: string) => `sf org list metadata --metadata-type ${type} --json`),
-    queryFieldDefinitions: jest.fn((sObjectNames: string[]) => `sf data query --query "SELECT QualifiedApiName, Label, DataType FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN (${sObjectNames.join(',')})" --json`),
-    retrieveMetadata: jest.fn((metadataItems: string[]) => `sf project retrieve start --metadata ${metadataItems.join(',')} --json`),
-    queryFolderBasedMetadata: jest.fn((type: string) => `sf data query --query "SELECT Id, Name, DeveloperName, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName FROM ${type} ORDER BY Name" --json`)
+    listMetadataOfType: jest.fn(
+      (type: string) => `sf org list metadata --metadata-type ${type} --json`
+    ),
+    queryFieldDefinitions: jest.fn(
+      (sObjectNames: string[]) =>
+        `sf data query --query "SELECT QualifiedApiName, Label, DataType FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN (${sObjectNames.join(",")})" --json`
+    ),
+    retrieveMetadata: jest.fn(
+      (metadataItems: string[]) =>
+        `sf project retrieve start --metadata ${metadataItems.join(",")} --json`
+    ),
+    queryFolderBasedMetadata: jest.fn(
+      (type: string) =>
+        `sf data query --query "SELECT Id, Name, DeveloperName, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName FROM ${type} ORDER BY Name" --json`
+    )
   },
   COMMAND_PREFIX: {
     sfOrgListMetadata: "sf org list metadata"
@@ -82,19 +93,21 @@ jest.mock("../../modules/s/metadataExplorer/table", () => ({
 
 describe("MetadataExplorer Component Tests", () => {
   let metadataExplorer: MetadataExplorer;
-  let mockExecuteCommand: jest.MockedFunction<(command: string) => Promise<ExecuteResult>>;
+  let mockExecuteCommand: jest.MockedFunction<
+    (command: string) => Promise<ExecuteResult>
+  >;
   let mockRefresh: jest.MockedFunction<() => void>;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Create a new instance of MetadataExplorer
     metadataExplorer = new MetadataExplorer();
-    
+
     // Mock the executeCommand method
     mockExecuteCommand = jest.fn();
     (metadataExplorer as any).executeCommand = mockExecuteCommand;
-    
+
     // Mock the refresh method
     mockRefresh = jest.fn();
     (metadataExplorer as any).refresh = mockRefresh;
@@ -103,11 +116,14 @@ describe("MetadataExplorer Component Tests", () => {
   describe("connectedCallback", () => {
     it("should call initializeMetadataExplorer when connected", () => {
       // Arrange
-      const initializeSpy = jest.spyOn(metadataExplorer as any, 'initializeMetadataExplorer');
-      
+      const initializeSpy = jest.spyOn(
+        metadataExplorer as any,
+        "initializeMetadataExplorer"
+      );
+
       // Act
       metadataExplorer.connectedCallback();
-      
+
       // Assert
       expect(initializeSpy).toHaveBeenCalled();
     });
@@ -136,7 +152,11 @@ describe("MetadataExplorer Component Tests", () => {
           status: 0,
           result: {
             metadataObjects: [
-              { xmlName: "CustomObject", inFolder: false, childXmlNames: ["CustomField"] },
+              {
+                xmlName: "CustomObject",
+                inFolder: false,
+                childXmlNames: ["CustomField"]
+              },
               { xmlName: "ApexClass", inFolder: false }
             ]
           }
@@ -157,7 +177,9 @@ describe("MetadataExplorer Component Tests", () => {
       // Assert
       expect(metadataExplorer.orgConnectionInfo).toBeDefined();
       expect(metadataExplorer.metadataTypes).toBeDefined();
-      expect(metadataExplorer.metadataTypes?.result.metadataObjects).toHaveLength(2);
+      expect(
+        metadataExplorer.metadataTypes?.result.metadataObjects
+      ).toHaveLength(2);
     });
 
     it("should handle org display error", async () => {
@@ -188,16 +210,16 @@ describe("MetadataExplorer Component Tests", () => {
         status: 0,
         result: {
           metadataObjects: [
-            { 
-              xmlName: "CustomObject", 
-              inFolder: false, 
+            {
+              xmlName: "CustomObject",
+              inFolder: false,
               childXmlNames: ["CustomField"],
               directoryName: "objects",
               metaFile: true,
               suffix: "object"
             },
-            { 
-              xmlName: "ApexClass", 
+            {
+              xmlName: "ApexClass",
               inFolder: false,
               childXmlNames: [],
               directoryName: "classes",
@@ -220,7 +242,11 @@ describe("MetadataExplorer Component Tests", () => {
         stdout: JSON.stringify({
           status: 0,
           result: [
-            { fullName: "TestClass", type: "ApexClass", lastModifiedDate: "2023-01-01" }
+            {
+              fullName: "TestClass",
+              type: "ApexClass",
+              lastModifiedDate: "2023-01-01"
+            }
           ]
         }),
         stderr: "",
@@ -238,15 +264,18 @@ describe("MetadataExplorer Component Tests", () => {
 
       // Assert
       expect(metadataExplorer.selectedMetadataType?.xmlName).toBe("ApexClass");
-      expect(metadataExplorer.metadataItemsByType.get("ApexClass")).toBeDefined();
+      expect(
+        metadataExplorer.metadataItemsByType.get("ApexClass")
+      ).toBeDefined();
     });
 
     it("should handle folder-based metadata type selection", async () => {
       // Arrange
       metadataExplorer.metadataTypes!.result.metadataObjects[0].inFolder = true;
-      
+
       const folderResult: ExecuteResult = {
-        command: "sf data query --query \"SELECT Id, Name, DeveloperName, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName FROM CustomObject ORDER BY Name\" --json",
+        command:
+          'sf data query --query "SELECT Id, Name, DeveloperName, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName FROM CustomObject ORDER BY Name" --json',
         stdout: JSON.stringify({
           status: 0,
           result: {
@@ -276,8 +305,12 @@ describe("MetadataExplorer Component Tests", () => {
       } as CustomEvent);
 
       // Assert
-      expect(metadataExplorer.selectedMetadataType?.xmlName).toBe("CustomObject");
-      expect(metadataExplorer.folderBasedMetadataItems.get("CustomObject")).toBeDefined();
+      expect(metadataExplorer.selectedMetadataType?.xmlName).toBe(
+        "CustomObject"
+      );
+      expect(
+        metadataExplorer.folderBasedMetadataItems.get("CustomObject")
+      ).toBeDefined();
     });
   });
 
@@ -291,13 +324,13 @@ describe("MetadataExplorer Component Tests", () => {
         metaFile: true,
         suffix: "object"
       };
-      
+
       metadataExplorer.metadataItemsByType.set("CustomObject", {
         status: 0,
         result: [
-          { 
-            fullName: "TestObject__c", 
-            type: "CustomObject", 
+          {
+            fullName: "TestObject__c",
+            type: "CustomObject",
             lastModifiedDate: "2023-01-01",
             createdById: "test-id",
             createdByName: "Test User",
@@ -316,7 +349,8 @@ describe("MetadataExplorer Component Tests", () => {
     it("should handle custom object expansion", async () => {
       // Arrange
       const fieldQueryResult: ExecuteResult = {
-        command: "sf data query --query \"SELECT QualifiedApiName, Label, DataType FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('TestObject__c')\" --json",
+        command:
+          "sf data query --query \"SELECT QualifiedApiName, Label, DataType FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('TestObject__c')\" --json",
         stdout: JSON.stringify({
           status: 0,
           result: {
@@ -384,12 +418,16 @@ describe("MetadataExplorer Component Tests", () => {
     it("should handle metadata retrieval", async () => {
       // Arrange
       const retrieveResult: ExecuteResult = {
-        command: "sf project retrieve start --metadata ApexClass:TestClass,CustomObject:TestObject__c --json",
+        command:
+          "sf project retrieve start --metadata ApexClass:TestClass,CustomObject:TestObject__c --json",
         stdout: JSON.stringify({
           status: 0,
           result: {
             files: [
-              { filePath: "force-app/main/default/classes/TestClass.cls", state: "Created" }
+              {
+                filePath: "force-app/main/default/classes/TestClass.cls",
+                state: "Created"
+              }
             ]
           }
         }),
@@ -445,9 +483,7 @@ describe("MetadataExplorer Component Tests", () => {
   describe("handleRowSelection", () => {
     it("should update selectedRows", () => {
       // Arrange
-      const selectedRows = [
-        { fullName: "TestClass", type: "ApexClass" }
-      ];
+      const selectedRows = [{ fullName: "TestClass", type: "ApexClass" }];
 
       // Act
       metadataExplorer.handleRowSelection({
@@ -538,7 +574,11 @@ describe("MetadataExplorer Component Tests", () => {
         // Arrange
         metadataExplorer.selectedRows = [
           { id: "TestClass", fullName: "TestClass", type: "ApexClass" },
-          { id: "TestObject__c", fullName: "TestObject__c", type: "CustomObject" }
+          {
+            id: "TestObject__c",
+            fullName: "TestObject__c",
+            type: "CustomObject"
+          }
         ];
 
         // Act & Assert
@@ -573,7 +613,9 @@ describe("MetadataExplorer Component Tests", () => {
     describe("renderRetrieve", () => {
       it("should return true when rows are selected", () => {
         // Arrange
-        metadataExplorer.selectedRows = [{ id: "TestClass", fullName: "TestClass", type: "ApexClass" }];
+        metadataExplorer.selectedRows = [
+          { id: "TestClass", fullName: "TestClass", type: "ApexClass" }
+        ];
 
         // Act & Assert
         expect(metadataExplorer.renderRetrieve).toBe(true);
@@ -603,7 +645,7 @@ describe("MetadataExplorer Component Tests", () => {
           status: 0,
           result: {
             metadataObjects: [
-              { 
+              {
                 xmlName: "CustomObject",
                 directoryName: "objects",
                 inFolder: false,
@@ -611,7 +653,7 @@ describe("MetadataExplorer Component Tests", () => {
                 suffix: "object",
                 childXmlNames: []
               },
-              { 
+              {
                 xmlName: "ApexClass",
                 directoryName: "classes",
                 inFolder: false,
@@ -646,7 +688,7 @@ describe("MetadataExplorer Component Tests", () => {
     describe("selectedMetadataTypeValue", () => {
       it("should return the selected metadata type value", () => {
         // Arrange
-        metadataExplorer.selectedMetadataType = { 
+        metadataExplorer.selectedMetadataType = {
           xmlName: "CustomObject",
           directoryName: "objects",
           inFolder: false,
@@ -676,7 +718,10 @@ describe("MetadataExplorer Component Tests", () => {
         metadataExplorer.spinnerMessages.add("Command 2");
 
         // Act & Assert
-        expect(metadataExplorer.spinnerDisplayText).toEqual(["Command 1", "Command 2"]);
+        expect(metadataExplorer.spinnerDisplayText).toEqual([
+          "Command 1",
+          "Command 2"
+        ]);
       });
 
       it("should return empty array when not in debug mode", () => {
@@ -697,4 +742,4 @@ describe("MetadataExplorer Component Tests", () => {
       });
     });
   });
-}); 
+});

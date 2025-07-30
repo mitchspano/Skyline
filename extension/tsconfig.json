@@ -12,12 +12,6 @@
       "s/app": ["./modules/s/app/app.ts"]
     }
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "out"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "out"]
 }

@@ -40,7 +40,7 @@ describe("Index Tests", () => {
 
     // Mock createElement to return a proper Node-like object
     mockCreateElement.mockReturnValue({
-      tagName: 's-app',
+      tagName: "s-app",
       nodeType: 1,
       appendChild: jest.fn(),
       removeChild: jest.fn()
@@ -61,7 +61,7 @@ describe("Index Tests", () => {
       // Simulate the index.ts behavior
       const domContentLoadedCallback = jest.fn();
       document.addEventListener("DOMContentLoaded", domContentLoadedCallback);
-      
+
       expect(document.addEventListener).toHaveBeenCalledWith(
         "DOMContentLoaded",
         expect.any(Function)
@@ -70,21 +70,27 @@ describe("Index Tests", () => {
 
     it("should create app element and append to body when DOMContentLoaded fires", () => {
       // Mock createElement to return a mock element
-      mockCreateElement.mockReturnValue({ tagName: 's-app' });
-      
+      mockCreateElement.mockReturnValue({ tagName: "s-app" });
+
       // Simulate the index.ts behavior
       const domContentLoadedCallback = jest.fn(() => {
-        const appElement = mockCreateElement("s-app", { is: expect.any(Object) });
+        const appElement = mockCreateElement("s-app", {
+          is: expect.any(Object)
+        });
         document.body.appendChild(appElement);
       });
-      
+
       document.addEventListener("DOMContentLoaded", domContentLoadedCallback);
-      
+
       // Simulate DOMContentLoaded event
       domContentLoadedCallback();
-      
-      expect(mockCreateElement).toHaveBeenCalledWith("s-app", { is: expect.any(Object) });
-      expect(document.body.appendChild).toHaveBeenCalledWith({ tagName: 's-app' });
+
+      expect(mockCreateElement).toHaveBeenCalledWith("s-app", {
+        is: expect.any(Object)
+      });
+      expect(document.body.appendChild).toHaveBeenCalledWith({
+        tagName: "s-app"
+      });
     });
   });
 
@@ -93,7 +99,7 @@ describe("Index Tests", () => {
       // Simulate the index.ts behavior
       const messageCallback = jest.fn();
       window.addEventListener("message", messageCallback);
-      
+
       expect(window.addEventListener).toHaveBeenCalledWith(
         "message",
         expect.any(Function)
@@ -105,9 +111,9 @@ describe("Index Tests", () => {
       const messageCallback = jest.fn((event) => {
         mockHandleCommandResult(event.data);
       });
-      
+
       window.addEventListener("message", messageCallback);
-      
+
       const mockEvent = {
         data: {
           command: "test-command",
@@ -116,10 +122,10 @@ describe("Index Tests", () => {
           requestId: "test-request"
         }
       };
-      
+
       // Simulate message event
       messageCallback(mockEvent);
-      
+
       expect(mockHandleCommandResult).toHaveBeenCalledWith(mockEvent.data);
     });
 
@@ -128,21 +134,27 @@ describe("Index Tests", () => {
       const messageCallback = jest.fn((event) => {
         mockHandleCommandResult(event.data);
       });
-      
+
       window.addEventListener("message", messageCallback);
-      
+
       const testCases = [
         { data: { command: "simple-command" } },
-        { data: { command: "error-command", stderr: "error message", errorCode: 1 } },
+        {
+          data: {
+            command: "error-command",
+            stderr: "error message",
+            errorCode: 1
+          }
+        },
         { data: { command: "success-command", stdout: "success message" } },
         { data: {} }
       ];
-      
+
       testCases.forEach((testCase) => {
         messageCallback(testCase);
         expect(mockHandleCommandResult).toHaveBeenCalledWith(testCase.data);
       });
-      
+
       expect(mockHandleCommandResult).toHaveBeenCalledTimes(testCases.length);
     });
   });
@@ -152,10 +164,10 @@ describe("Index Tests", () => {
       // Simulate the index.ts behavior
       const domContentLoadedCallback = jest.fn();
       const messageCallback = jest.fn();
-      
+
       document.addEventListener("DOMContentLoaded", domContentLoadedCallback);
       window.addEventListener("message", messageCallback);
-      
+
       expect(document.addEventListener).toHaveBeenCalledTimes(1);
       expect(window.addEventListener).toHaveBeenCalledTimes(1);
     });
@@ -165,34 +177,39 @@ describe("Index Tests", () => {
       const messageCallback = jest.fn((event) => {
         mockHandleCommandResult(event.data);
       });
-      
+
       window.addEventListener("message", messageCallback);
-      
+
       const messages = [
         { data: { command: "first-command" } },
         { data: { command: "second-command" } },
         { data: { command: "third-command" } }
       ];
-      
+
       messages.forEach((message) => {
         messageCallback(message);
       });
-      
+
       expect(mockHandleCommandResult).toHaveBeenCalledTimes(3);
       messages.forEach((message, index) => {
-        expect(mockHandleCommandResult).toHaveBeenNthCalledWith(index + 1, message.data);
+        expect(mockHandleCommandResult).toHaveBeenNthCalledWith(
+          index + 1,
+          message.data
+        );
       });
     });
   });
 
   describe("Error Handling", () => {
     it("should handle App.handleCommandResult throwing an error", () => {
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      
+      const consoleSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
       mockHandleCommandResult.mockImplementation(() => {
         throw new Error("Test error");
       });
-      
+
       // Simulate the index.ts behavior
       const messageCallback = jest.fn((event) => {
         try {
@@ -201,15 +218,15 @@ describe("Index Tests", () => {
           console.error(error);
         }
       });
-      
+
       window.addEventListener("message", messageCallback);
-      
+
       const mockEvent = { data: { command: "test" } };
-      
+
       // Should not throw, but should log error
       expect(() => messageCallback(mockEvent)).not.toThrow();
-      
+
       consoleSpy.mockRestore();
     });
   });
-}); 
+});

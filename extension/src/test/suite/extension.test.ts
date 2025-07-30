@@ -36,7 +36,7 @@ describe("Extension Tests", () => {
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Reset the exec mock
     (exec as unknown as jest.Mock).mockReset();
 
@@ -44,7 +44,7 @@ describe("Extension Tests", () => {
     mockSubscriptions = [];
     mockContext = {
       subscriptions: mockSubscriptions,
-      extensionUri: { fsPath: '/test/extension/path' } as vscode.Uri
+      extensionUri: { fsPath: "/test/extension/path" } as vscode.Uri
     } as vscode.ExtensionContext;
 
     // Mock webview panel
@@ -61,12 +61,18 @@ describe("Extension Tests", () => {
 
     // Mock VS Code API
     (vscode.window.createWebviewPanel as jest.Mock).mockReturnValue(mockPanel);
-    (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
-    (vscode.commands.registerCommand as jest.Mock).mockReturnValue({ dispose: jest.fn() });
+    (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(
+      undefined
+    );
+    (vscode.commands.registerCommand as jest.Mock).mockReturnValue({
+      dispose: jest.fn()
+    });
     (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
       debugMode: false
     });
-    (vscode.Uri.joinPath as jest.Mock).mockReturnValue({ fsPath: "/test/path" });
+    (vscode.Uri.joinPath as jest.Mock).mockReturnValue({
+      fsPath: "/test/path"
+    });
   });
 
   describe("activate function", () => {
@@ -89,8 +95,9 @@ describe("Extension Tests", () => {
       activate(mockContext);
 
       // Get the registered command callback
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
-      
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
+
       // Execute the command
       commandCallback();
 
@@ -108,7 +115,8 @@ describe("Extension Tests", () => {
     it("should set up webview HTML content", () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
       expect(mockPanel.webview.html).toBeTruthy();
@@ -118,7 +126,8 @@ describe("Extension Tests", () => {
     it("should set up message listener", () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
       expect(mockWebview.onDidReceiveMessage).toHaveBeenCalledWith(
@@ -133,12 +142,13 @@ describe("Extension Tests", () => {
     it("should include proper HTML structure", () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
       const html = mockPanel.webview.html;
       expect(html).toContain("<!DOCTYPE html>");
-      expect(html).toContain("<html lang=\"en\">");
+      expect(html).toContain('<html lang="en">');
       expect(html).toContain("<head>");
       expect(html).toContain("<body>");
     });
@@ -146,7 +156,8 @@ describe("Extension Tests", () => {
     it("should include script and style references", () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
       const html = mockPanel.webview.html;
@@ -158,7 +169,8 @@ describe("Extension Tests", () => {
     it("should include extension path and configuration", () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
       const html = mockPanel.webview.html;
@@ -171,11 +183,13 @@ describe("Extension Tests", () => {
     it("should execute command when message is received", () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
-      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
-      
+      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock)
+        .mock.calls[0][0];
+
       const testMessage = {
         command: "test-command",
         elementId: "test-element",
@@ -193,18 +207,22 @@ describe("Extension Tests", () => {
     it("should handle command execution success", async () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
-      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
-      
-      (exec as unknown as jest.Mock).mockImplementation((command, optionsOrCallback, callback) => {
-        const actualCallback = callback || optionsOrCallback;
-        if (actualCallback && typeof actualCallback === 'function') {
-          actualCallback(null, "success output", "");
+      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock)
+        .mock.calls[0][0];
+
+      (exec as unknown as jest.Mock).mockImplementation(
+        (command, optionsOrCallback, callback) => {
+          const actualCallback = callback || optionsOrCallback;
+          if (actualCallback && typeof actualCallback === "function") {
+            actualCallback(null, "success output", "");
+          }
+          return {} as any;
         }
-        return {} as any;
-      });
+      );
 
       const testMessage = {
         command: "success-command",
@@ -215,8 +233,8 @@ describe("Extension Tests", () => {
       messageCallback(testMessage);
 
       // Wait for async execution
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       expect(mockWebview.postMessage).toHaveBeenCalledWith({
         command: "success-command",
         stdout: "success output",
@@ -228,21 +246,25 @@ describe("Extension Tests", () => {
     it("should handle command execution error", async () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
-      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
-      
+      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock)
+        .mock.calls[0][0];
+
       const testError = new Error("Command failed");
       (testError as any).code = 1;
 
-      (exec as unknown as jest.Mock).mockImplementation((command, optionsOrCallback, callback) => {
-        const actualCallback = callback || optionsOrCallback;
-        if (actualCallback && typeof actualCallback === 'function') {
-          actualCallback(testError, "", "error output");
+      (exec as unknown as jest.Mock).mockImplementation(
+        (command, optionsOrCallback, callback) => {
+          const actualCallback = callback || optionsOrCallback;
+          if (actualCallback && typeof actualCallback === "function") {
+            actualCallback(testError, "", "error output");
+          }
+          return {} as any;
         }
-        return {} as any;
-      });
+      );
 
       const testMessage = {
         command: "error-command",
@@ -253,8 +275,8 @@ describe("Extension Tests", () => {
       messageCallback(testMessage);
 
       // Wait for async execution
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       expect(mockWebview.postMessage).toHaveBeenCalledWith({
         command: "error-command",
         stderr: "error output",
@@ -269,7 +291,8 @@ describe("Extension Tests", () => {
     it("should generate proper URIs for webview resources", () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
       expect(vscode.Uri.joinPath).toHaveBeenCalled();
@@ -280,7 +303,8 @@ describe("Extension Tests", () => {
     it("should get workspace configuration", () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
       expect(vscode.workspace.getConfiguration).toHaveBeenCalledWith("skyline");
@@ -293,7 +317,8 @@ describe("Extension Tests", () => {
 
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
       const html = mockPanel.webview.html;
@@ -305,11 +330,13 @@ describe("Extension Tests", () => {
     it("should handle missing command in message", () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
-      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
-      
+      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock)
+        .mock.calls[0][0];
+
       const testMessage = {
         elementId: "test-element"
       };
@@ -320,18 +347,22 @@ describe("Extension Tests", () => {
     it("should handle exec callback with null error and no output", async () => {
       activate(mockContext);
 
-      const commandCallback = (vscode.commands.registerCommand as jest.Mock).mock.calls[0][1];
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
       commandCallback();
 
-      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
-      
-      (exec as unknown as jest.Mock).mockImplementation((command, optionsOrCallback, callback) => {
-        const actualCallback = callback || optionsOrCallback;
-        if (actualCallback && typeof actualCallback === 'function') {
-          actualCallback(null, "", "");
+      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock)
+        .mock.calls[0][0];
+
+      (exec as unknown as jest.Mock).mockImplementation(
+        (command, optionsOrCallback, callback) => {
+          const actualCallback = callback || optionsOrCallback;
+          if (actualCallback && typeof actualCallback === "function") {
+            actualCallback(null, "", "");
+          }
+          return {} as any;
         }
-        return {} as any;
-      });
+      );
 
       const testMessage = {
         command: "empty-command"
@@ -339,8 +370,8 @@ describe("Extension Tests", () => {
 
       messageCallback(testMessage);
 
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       expect(mockWebview.postMessage).toHaveBeenCalledWith({
         command: "empty-command",
         stdout: ""

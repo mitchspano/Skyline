@@ -24,14 +24,16 @@ jest.mock("lightning-base-components/src/lightning/toast/toast.js", () => ({
 
 describe("Pipeline Component Tests", () => {
   let pipeline: Pipeline;
-  let mockExecuteCommand: jest.MockedFunction<(command: string) => Promise<ExecuteResult>>;
+  let mockExecuteCommand: jest.MockedFunction<
+    (command: string) => Promise<ExecuteResult>
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Create a new instance of Pipeline
     pipeline = new Pipeline();
-    
+
     // Mock the executeCommand method
     mockExecuteCommand = jest.fn();
     (pipeline as any).executeCommand = mockExecuteCommand;
@@ -40,11 +42,11 @@ describe("Pipeline Component Tests", () => {
   describe("connectedCallback", () => {
     it("should call loadConfiguration when connected", () => {
       // Arrange
-      const loadConfigSpy = jest.spyOn(pipeline as any, 'loadConfiguration');
-      
+      const loadConfigSpy = jest.spyOn(pipeline as any, "loadConfiguration");
+
       // Act
       pipeline.connectedCallback();
-      
+
       // Assert
       expect(loadConfigSpy).toHaveBeenCalled();
     });
@@ -69,11 +71,11 @@ describe("Pipeline Component Tests", () => {
   describe("handleSearch", () => {
     it("should call executeSearch when search is triggered", () => {
       // Arrange
-      const executeSearchSpy = jest.spyOn(pipeline as any, 'executeSearch');
-      
+      const executeSearchSpy = jest.spyOn(pipeline as any, "executeSearch");
+
       // Act
       pipeline.handleSearch();
-      
+
       // Assert
       expect(executeSearchSpy).toHaveBeenCalled();
     });
@@ -104,7 +106,7 @@ describe("Pipeline Component Tests", () => {
           version: "1.0.0",
           pipelineOrder: ["main", "develop"],
           branches: {
-            main: { 
+            main: {
               label: "Production",
               instanceUrl: "https://test.salesforce.com",
               consumerKey: "test-key",
@@ -118,7 +120,7 @@ describe("Pipeline Component Tests", () => {
                 deployment: "RunLocalTests"
               }
             },
-            develop: { 
+            develop: {
               label: "Development",
               instanceUrl: "https://test.salesforce.com",
               consumerKey: "test-key",
@@ -171,7 +173,7 @@ describe("Pipeline Component Tests", () => {
         version: "1.0.0",
         pipelineOrder: ["main", "develop"],
         branches: {
-          main: { 
+          main: {
             label: "Production",
             instanceUrl: "https://test.salesforce.com",
             consumerKey: "test-key",
@@ -185,7 +187,7 @@ describe("Pipeline Component Tests", () => {
               deployment: "RunLocalTests"
             }
           },
-          develop: { 
+          develop: {
             label: "Development",
             instanceUrl: "https://test.salesforce.com",
             consumerKey: "test-key",
@@ -242,7 +244,8 @@ describe("Pipeline Component Tests", () => {
       // Arrange
       pipeline.searchTerm = "ABC-123";
       const searchResult: ExecuteResult = {
-        command: 'gh pr list --json number,title,body,baseRefName,url,files,createdAt,state,closedAt --search "ABC-123" --state all',
+        command:
+          'gh pr list --json number,title,body,baseRefName,url,files,createdAt,state,closedAt --search "ABC-123" --state all',
         stdout: JSON.stringify([
           {
             number: 1,
@@ -276,7 +279,8 @@ describe("Pipeline Component Tests", () => {
       // Arrange
       pipeline.searchTerm = "NONEXISTENT";
       const searchResult: ExecuteResult = {
-        command: 'gh pr list --json number,title,body,baseRefName,url,files,createdAt,state,closedAt --search "NONEXISTENT" --state all',
+        command:
+          'gh pr list --json number,title,body,baseRefName,url,files,createdAt,state,closedAt --search "NONEXISTENT" --state all',
         stdout: JSON.stringify([]),
         stderr: "",
         elementId: "test",
@@ -292,7 +296,9 @@ describe("Pipeline Component Tests", () => {
       // Assert
       expect(pipeline.isLoading).toBe(false);
       expect(pipeline.pullRequests).toHaveLength(0);
-      expect(pipeline.searchMessage).toBe('No changes found matching "NONEXISTENT"');
+      expect(pipeline.searchMessage).toBe(
+        'No changes found matching "NONEXISTENT"'
+      );
     });
 
     it("should handle search errors", async () => {
@@ -504,4 +510,4 @@ describe("Pipeline Component Tests", () => {
       });
     });
   });
-}); 
+});

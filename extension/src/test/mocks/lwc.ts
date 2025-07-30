@@ -97,4 +97,4 @@ export const wire = (target: any, propertyKey?: string) => {
     // Class decorator or parameter decorator
     return (target: any, propertyKey: string) => target;
   }
-}; 
+};

@@ -77,4 +77,4 @@ export default class OrgListItem {
     });
     this.dispatchEvent(openEvent);
   }
-} 
+}

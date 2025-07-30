@@ -16,7 +16,6 @@
 
 // Test the business logic functions directly without importing the component
 describe("BranchModal Logic Tests", () => {
-  
   // Mock the component structure
   class MockBranchModal {
     availableBranches: string[] = [];
@@ -202,7 +201,12 @@ describe("BranchModal Logic Tests", () => {
     });
 
     it("should filter out existing branches from available branches", () => {
-      branchModal.availableBranches = ["main", "develop", "feature/test", "hotfix/bug"];
+      branchModal.availableBranches = [
+        "main",
+        "develop",
+        "feature/test",
+        "hotfix/bug"
+      ];
       branchModal.existingBranches = ["main", "develop"];
 
       const options = branchModal.branchOptions;
@@ -235,7 +239,11 @@ describe("BranchModal Logic Tests", () => {
     });
 
     it("should handle special characters in branch names", () => {
-      branchModal.availableBranches = ["feature/test-branch", "hotfix/bug#123", "release/v1.0.0"];
+      branchModal.availableBranches = [
+        "feature/test-branch",
+        "hotfix/bug#123",
+        "release/v1.0.0"
+      ];
       branchModal.existingBranches = ["feature/test-branch"];
 
       const options = branchModal.branchOptions;
@@ -336,7 +344,8 @@ describe("BranchModal Logic Tests", () => {
     });
 
     it("should handle very long branch names", () => {
-      const longBranchName = "feature/very-long-branch-name-that-exceeds-normal-length-limits-for-git-branches";
+      const longBranchName =
+        "feature/very-long-branch-name-that-exceeds-normal-length-limits-for-git-branches";
       branchModal.availableBranches = ["main", longBranchName];
       branchModal.existingBranches = ["main"];
 
@@ -347,4 +356,4 @@ describe("BranchModal Logic Tests", () => {
       ]);
     });
   });
-}); 
+});

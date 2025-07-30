@@ -27,10 +27,10 @@ describe("CliElement Tests", () => {
   beforeEach(() => {
     // Clear all mocks
     jest.clearAllMocks();
-    
+
     // Get the mocked App module
     mockApp = App as jest.Mocked<typeof App>;
-    
+
     // Create a new instance of CliElement
     cliElement = new CliElement();
   });
@@ -47,7 +47,7 @@ describe("CliElement Tests", () => {
         requestId: "test-request",
         errorCode: 0
       };
-      
+
       mockApp.executeCommand.mockResolvedValue(expectedResult);
 
       // Act
@@ -69,7 +69,7 @@ describe("CliElement Tests", () => {
         requestId: "test-request",
         errorCode: 1
       };
-      
+
       mockApp.executeCommand.mockResolvedValue(errorResult);
 
       // Act
@@ -86,11 +86,13 @@ describe("CliElement Tests", () => {
       // Arrange
       const testCommand = "exception-command";
       const expectedError = new Error("Command execution failed");
-      
+
       mockApp.executeCommand.mockRejectedValue(expectedError);
 
       // Act & Assert
-      await expect(cliElement.executeCommand(testCommand)).rejects.toThrow("Command execution failed");
+      await expect(cliElement.executeCommand(testCommand)).rejects.toThrow(
+        "Command execution failed"
+      );
       expect(mockApp.executeCommand).toHaveBeenCalledWith(testCommand);
     });
   });
@@ -129,7 +131,7 @@ describe("CliElement Tests", () => {
         apiVersion: "58.0",
         orgAlias: "test-org"
       };
-      
+
       mockApp.getConfig.mockReturnValue(mockConfig);
 
       // Act
@@ -210,7 +212,7 @@ describe("CliElement Tests", () => {
         requestId: "test-request",
         errorCode: 0
       };
-      
+
       mockApp.executeCommand.mockResolvedValue(expectedResult);
 
       // Act
@@ -232,7 +234,7 @@ describe("CliElement Tests", () => {
         requestId: "test-request",
         errorCode: 0
       };
-      
+
       mockApp.executeCommand.mockResolvedValue(expectedResult);
 
       // Act
@@ -245,7 +247,8 @@ describe("CliElement Tests", () => {
 
     it("should handle special characters in command", async () => {
       // Arrange
-      const specialCommand = "test-command --flag='value with spaces' && echo 'done'";
+      const specialCommand =
+        "test-command --flag='value with spaces' && echo 'done'";
       const expectedResult: ExecuteResult = {
         command: specialCommand,
         stdout: "executed",
@@ -254,7 +257,7 @@ describe("CliElement Tests", () => {
         requestId: "test-request",
         errorCode: 0
       };
-      
+
       mockApp.executeCommand.mockResolvedValue(expectedResult);
 
       // Act
@@ -265,4 +268,4 @@ describe("CliElement Tests", () => {
       expect(result).toEqual(expectedResult);
     });
   });
-}); 
+});

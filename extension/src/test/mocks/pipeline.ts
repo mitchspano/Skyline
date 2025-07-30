@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { LightningElement } from 'lwc';
+import { LightningElement } from "lwc";
 
 export default class Pipeline extends LightningElement {
   searchTerm = "";
@@ -45,8 +45,8 @@ export default class Pipeline extends LightningElement {
     this.isLoading = true;
     try {
       // Mock implementation - simulate async operation
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       // Set expected data for tests
       this.configurationFileContents = {
         version: "1.0.0",
@@ -54,7 +54,7 @@ export default class Pipeline extends LightningElement {
         branches: {}
       };
       this.orderedBranches = ["main", "develop"];
-      
+
       this.isLoading = false;
     } catch (error) {
       this.isLoading = false;
@@ -65,7 +65,8 @@ export default class Pipeline extends LightningElement {
     if (result.stdout) {
       try {
         this.configurationFileContents = JSON.parse(result.stdout);
-        this.orderedBranches = this.configurationFileContents?.pipelineOrder || [];
+        this.orderedBranches =
+          this.configurationFileContents?.pipelineOrder || [];
       } catch (error) {
         // Handle parsing error
       }
@@ -76,26 +77,28 @@ export default class Pipeline extends LightningElement {
     this.isLoading = true;
     try {
       // Mock implementation - simulate async operation
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       // Set expected data for tests
       if (this.searchTerm === "NONEXISTENT") {
         this.pullRequests = [];
         this.searchMessage = `No changes found matching "${this.searchTerm}"`;
       } else {
-        this.pullRequests = [{
-          number: 1,
-          title: "Test PR",
-          body: "Test body",
-          baseRefName: "main",
-          url: "https://github.com/test/pr/1",
-          files: [],
-          createdAt: "2023-01-01T00:00:00Z",
-          state: "OPEN"
-        }];
+        this.pullRequests = [
+          {
+            number: 1,
+            title: "Test PR",
+            body: "Test body",
+            baseRefName: "main",
+            url: "https://github.com/test/pr/1",
+            files: [],
+            createdAt: "2023-01-01T00:00:00Z",
+            state: "OPEN"
+          }
+        ];
         this.searchMessage = "";
       }
-      
+
       this.isLoading = false;
     } catch (error) {
       this.isLoading = false;
@@ -121,7 +124,8 @@ export default class Pipeline extends LightningElement {
       ...pr,
       bodySectionName: `${pr.number}_body`,
       filesSectionName: `${pr.number}_files`,
-      stateBadgeClass: pr.state === "OPEN" ? "slds-badge slds-theme_success" : "slds-badge"
+      stateBadgeClass:
+        pr.state === "OPEN" ? "slds-badge slds-theme_success" : "slds-badge"
     };
   }
 
@@ -137,7 +141,7 @@ export default class Pipeline extends LightningElement {
 
   get groupedPullRequests() {
     const groups = this.groupPullRequestsByBranch(this.pullRequests);
-    return Object.keys(groups).map(key => ({
+    return Object.keys(groups).map((key) => ({
       key,
       value: groups[key],
       isOrderedBranch: this.orderedBranches.includes(key)
@@ -151,4 +155,4 @@ export default class Pipeline extends LightningElement {
   get searchIsDisabled() {
     return !this.searchTerm;
   }
-} 
+}

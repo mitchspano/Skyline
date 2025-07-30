@@ -50,4 +50,4 @@ export default class Header extends LightningElement {
   handleNavigationClick() {
     this.showNavigation = !this.showNavigation;
   }
-} 
+}

@@ -22,9 +22,10 @@ describe("ScratchOrgModal Component Tests", () => {
   let mockDispatchEvent: jest.MockedFunction<(event: CustomEvent) => boolean>;
 
   // Helper function to create mock events
-  const createMockEvent = (value: string): Event => ({
-    target: { value }
-  } as any);
+  const createMockEvent = (value: string): Event =>
+    ({
+      target: { value }
+    }) as any;
 
   const mockDevHubs: OrgInfo[] = [
     {
@@ -63,18 +64,21 @@ describe("ScratchOrgModal Component Tests", () => {
     }
   ];
 
-  const mockDefinitionFileOptions = ["config/project-scratch-def.json", "config/dev-scratch-def.json"];
+  const mockDefinitionFileOptions = [
+    "config/project-scratch-def.json",
+    "config/dev-scratch-def.json"
+  ];
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Create a new instance of ScratchOrgModal
     scratchOrgModal = new ScratchOrgModal();
-    
+
     // Mock the dispatchEvent method
     mockDispatchEvent = jest.fn().mockReturnValue(true);
     scratchOrgModal.dispatchEvent = mockDispatchEvent;
-    
+
     // Initialize properties manually since @track doesn't work in tests
     scratchOrgModal.devHubs = [...mockDevHubs];
     scratchOrgModal.definitionFileOptions = [...mockDefinitionFileOptions];
@@ -99,13 +103,15 @@ describe("ScratchOrgModal Component Tests", () => {
     });
 
     it("should have required methods", () => {
-      expect(typeof scratchOrgModal.handleDevHubChange).toBe('function');
-      expect(typeof scratchOrgModal.handleAliasChange).toBe('function');
-      expect(typeof scratchOrgModal.handleDefinitionFileChange).toBe('function');
-      expect(typeof scratchOrgModal.handleDaysChange).toBe('function');
-      expect(typeof scratchOrgModal.handleCancel).toBe('function');
-      expect(typeof scratchOrgModal.handleSubmit).toBe('function');
-      expect(typeof scratchOrgModal.connectedCallback).toBe('function');
+      expect(typeof scratchOrgModal.handleDevHubChange).toBe("function");
+      expect(typeof scratchOrgModal.handleAliasChange).toBe("function");
+      expect(typeof scratchOrgModal.handleDefinitionFileChange).toBe(
+        "function"
+      );
+      expect(typeof scratchOrgModal.handleDaysChange).toBe("function");
+      expect(typeof scratchOrgModal.handleCancel).toBe("function");
+      expect(typeof scratchOrgModal.handleSubmit).toBe("function");
+      expect(typeof scratchOrgModal.connectedCallback).toBe("function");
     });
   });
 
@@ -126,7 +132,7 @@ describe("ScratchOrgModal Component Tests", () => {
       it("should return formatted options from devHubs", () => {
         scratchOrgModal.devHubs = mockDevHubs;
         const options = scratchOrgModal.devHubOptions;
-        
+
         expect(options).toHaveLength(2);
         expect(options[0]).toEqual({
           label: "devhub1 (devhub1@example.com)",
@@ -168,7 +174,7 @@ describe("ScratchOrgModal Component Tests", () => {
         scratchOrgModal.definitionFile = "";
         scratchOrgModal.days = 7;
         scratchOrgModal.error = null;
-        
+
         expect(scratchOrgModal.isCreateDisabled).toBe(true);
       });
 
@@ -178,7 +184,7 @@ describe("ScratchOrgModal Component Tests", () => {
         scratchOrgModal.definitionFile = "config/project-scratch-def.json";
         scratchOrgModal.days = 0;
         scratchOrgModal.error = null;
-        
+
         expect(scratchOrgModal.isCreateDisabled).toBe(true);
       });
 
@@ -188,7 +194,7 @@ describe("ScratchOrgModal Component Tests", () => {
         scratchOrgModal.definitionFile = "config/project-scratch-def.json";
         scratchOrgModal.days = 31;
         scratchOrgModal.error = null;
-        
+
         expect(scratchOrgModal.isCreateDisabled).toBe(true);
       });
 
@@ -198,7 +204,7 @@ describe("ScratchOrgModal Component Tests", () => {
         scratchOrgModal.definitionFile = "config/project-scratch-def.json";
         scratchOrgModal.days = 7;
         scratchOrgModal.error = "Some error";
-        
+
         expect(scratchOrgModal.isCreateDisabled).toBe(true);
       });
 
@@ -208,7 +214,7 @@ describe("ScratchOrgModal Component Tests", () => {
         scratchOrgModal.definitionFile = "config/project-scratch-def.json";
         scratchOrgModal.days = 7;
         scratchOrgModal.error = null;
-        
+
         expect(scratchOrgModal.isCreateDisabled).toBe(false);
       });
     });
@@ -238,7 +244,9 @@ describe("ScratchOrgModal Component Tests", () => {
         const mockEvent = createMockEvent("config/dev-scratch-def.json");
 
         scratchOrgModal.handleDefinitionFileChange(mockEvent);
-        expect(scratchOrgModal.definitionFile).toBe("config/dev-scratch-def.json");
+        expect(scratchOrgModal.definitionFile).toBe(
+          "config/dev-scratch-def.json"
+        );
       });
     });
 
@@ -285,7 +293,7 @@ describe("ScratchOrgModal Component Tests", () => {
     describe("handleCancel", () => {
       it("should dispatch close event", () => {
         scratchOrgModal.handleCancel();
-        
+
         expect(mockDispatchEvent).toHaveBeenCalledWith(
           expect.objectContaining({
             type: "close"
@@ -306,7 +314,7 @@ describe("ScratchOrgModal Component Tests", () => {
 
       it("should dispatch create event with form data when all fields are valid", () => {
         scratchOrgModal.handleSubmit();
-        
+
         expect(mockDispatchEvent).toHaveBeenCalledWith(
           expect.objectContaining({
             type: "create",
@@ -322,45 +330,45 @@ describe("ScratchOrgModal Component Tests", () => {
 
       it("should set error when devHub is not selected", () => {
         scratchOrgModal.selectedDevHub = "";
-        
+
         scratchOrgModal.handleSubmit();
-        
+
         expect(scratchOrgModal.error).toBe("Please select a Dev Hub");
         expect(mockDispatchEvent).not.toHaveBeenCalled();
       });
 
       it("should set error when orgAlias is empty", () => {
         scratchOrgModal.orgAlias = "";
-        
+
         scratchOrgModal.handleSubmit();
-        
+
         expect(scratchOrgModal.error).toBe("Please enter an org alias");
         expect(mockDispatchEvent).not.toHaveBeenCalled();
       });
 
       it("should set error when definitionFile is not selected", () => {
         scratchOrgModal.definitionFile = "";
-        
+
         scratchOrgModal.handleSubmit();
-        
+
         expect(scratchOrgModal.error).toBe("Please select a definition file");
         expect(mockDispatchEvent).not.toHaveBeenCalled();
       });
 
       it("should set error when days is invalid", () => {
         scratchOrgModal.days = 0;
-        
+
         scratchOrgModal.handleSubmit();
-        
+
         expect(scratchOrgModal.error).toBe("Days must be between 1 and 30");
         expect(mockDispatchEvent).not.toHaveBeenCalled();
       });
 
       it("should set error when days is greater than 30", () => {
         scratchOrgModal.days = 31;
-        
+
         scratchOrgModal.handleSubmit();
-        
+
         expect(scratchOrgModal.error).toBe("Days must be between 1 and 30");
         expect(mockDispatchEvent).not.toHaveBeenCalled();
       });
@@ -368,10 +376,10 @@ describe("ScratchOrgModal Component Tests", () => {
       it("should handle multiple validation errors in sequence", () => {
         scratchOrgModal.selectedDevHub = "";
         scratchOrgModal.orgAlias = "";
-        
+
         scratchOrgModal.handleSubmit();
         expect(scratchOrgModal.error).toBe("Please select a Dev Hub");
-        
+
         scratchOrgModal.selectedDevHub = "devhub1";
         scratchOrgModal.handleSubmit();
         expect(scratchOrgModal.error).toBe("Please enter an org alias");
@@ -384,27 +392,31 @@ describe("ScratchOrgModal Component Tests", () => {
       it("should set default definition file when options exist and no file is selected", () => {
         scratchOrgModal.definitionFile = "";
         scratchOrgModal.definitionFileOptions = mockDefinitionFileOptions;
-        
+
         scratchOrgModal.connectedCallback();
-        
-        expect(scratchOrgModal.definitionFile).toBe("config/project-scratch-def.json");
+
+        expect(scratchOrgModal.definitionFile).toBe(
+          "config/project-scratch-def.json"
+        );
       });
 
       it("should not change definition file when one is already selected", () => {
         scratchOrgModal.definitionFile = "config/dev-scratch-def.json";
         scratchOrgModal.definitionFileOptions = mockDefinitionFileOptions;
-        
+
         scratchOrgModal.connectedCallback();
-        
-        expect(scratchOrgModal.definitionFile).toBe("config/dev-scratch-def.json");
+
+        expect(scratchOrgModal.definitionFile).toBe(
+          "config/dev-scratch-def.json"
+        );
       });
 
       it("should not change definition file when no options exist", () => {
         scratchOrgModal.definitionFile = "";
         scratchOrgModal.definitionFileOptions = [];
-        
+
         scratchOrgModal.connectedCallback();
-        
+
         expect(scratchOrgModal.definitionFile).toBe("");
       });
     });
@@ -413,20 +425,20 @@ describe("ScratchOrgModal Component Tests", () => {
   describe("Edge Cases", () => {
     it("should handle empty devHubs array gracefully", () => {
       scratchOrgModal.devHubs = [];
-      
+
       expect(scratchOrgModal.hasDevHubs).toBe(false);
       expect(scratchOrgModal.devHubOptions).toEqual([]);
     });
 
     it("should handle undefined definitionFileOptions gracefully", () => {
       scratchOrgModal.definitionFileOptions = undefined as any;
-      
+
       expect(scratchOrgModal.hasDefinitionFileOptions).toBe(false);
     });
 
     it("should handle null definitionFileOptions gracefully", () => {
       scratchOrgModal.definitionFileOptions = null as any;
-      
+
       expect(scratchOrgModal.hasDefinitionFileOptions).toBe(false);
     });
 
@@ -436,7 +448,7 @@ describe("ScratchOrgModal Component Tests", () => {
         { username: "devhub2@example.com" } as OrgInfo
       ];
       scratchOrgModal.devHubs = incompleteDevHubs;
-      
+
       const options = scratchOrgModal.devHubOptions;
       expect(options[0].label).toBe("devhub1 (undefined)");
       expect(options[1].label).toBe("undefined (devhub2@example.com)");
@@ -462,13 +474,17 @@ describe("ScratchOrgModal Component Tests", () => {
       // Simulate user filling out the form
       scratchOrgModal.handleDevHubChange(createMockEvent("devhub1"));
       scratchOrgModal.handleAliasChange(createMockEvent("test-org"));
-      scratchOrgModal.handleDefinitionFileChange(createMockEvent("config/project-scratch-def.json"));
+      scratchOrgModal.handleDefinitionFileChange(
+        createMockEvent("config/project-scratch-def.json")
+      );
       scratchOrgModal.handleDaysChange(createMockEvent("14"));
 
       // Verify form state
       expect(scratchOrgModal.selectedDevHub).toBe("devhub1");
       expect(scratchOrgModal.orgAlias).toBe("test-org");
-      expect(scratchOrgModal.definitionFile).toBe("config/project-scratch-def.json");
+      expect(scratchOrgModal.definitionFile).toBe(
+        "config/project-scratch-def.json"
+      );
       expect(scratchOrgModal.days).toBe(14);
       expect(scratchOrgModal.error).toBe(null);
       expect(scratchOrgModal.isCreateDisabled).toBe(false);
@@ -510,4 +526,4 @@ describe("ScratchOrgModal Component Tests", () => {
       // resetting the form state when the modal is closed
     });
   });
-}); 
+});

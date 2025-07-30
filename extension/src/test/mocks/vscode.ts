@@ -26,7 +26,7 @@ export const ViewColumn = {
 };
 
 export const Uri = {
-  joinPath: jest.fn(() => ({ fsPath: '/test/path' })),
+  joinPath: jest.fn(() => ({ fsPath: "/test/path" })),
   file: jest.fn()
 };
 
@@ -41,4 +41,4 @@ export const commands = {
 export const ExtensionContext = jest.fn();
 export const WebviewPanel = jest.fn();
 export const Webview = jest.fn();
-export const Disposable = jest.fn(); 
+export const Disposable = jest.fn();

@@ -20,18 +20,20 @@ import App from "../../modules/s/app/app";
 
 describe("Home Component Tests", () => {
   let home: Home;
-  let mockExecuteCommand: jest.MockedFunction<(command: string) => Promise<ExecuteResult>>;
+  let mockExecuteCommand: jest.MockedFunction<
+    (command: string) => Promise<ExecuteResult>
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Create a new instance of Home
     home = new Home();
-    
+
     // Mock the home component's executeCommand method
     mockExecuteCommand = jest.fn();
     (home as any).executeCommand = mockExecuteCommand;
-    
+
     // Initialize properties manually since @track doesn't work in tests
     home.showSpinner = false;
     home.gitInstalled = false;
@@ -78,7 +80,7 @@ describe("Home Component Tests", () => {
         requestId: "test",
         errorCode: 0
       };
-      
+
       const sfCliResult: ExecuteResult = {
         command: "sf --version",
         stdout: "sf version 1.0.0",
@@ -87,7 +89,7 @@ describe("Home Component Tests", () => {
         requestId: "test",
         errorCode: 0
       };
-      
+
       const gitDirResult: ExecuteResult = {
         command: "git status",
         stdout: "On branch main",
@@ -124,7 +126,7 @@ describe("Home Component Tests", () => {
         requestId: "test",
         errorCode: 1
       };
-      
+
       const sfCliResult: ExecuteResult = {
         command: "sf --version",
         stdout: "sf version 1.0.0",
@@ -159,7 +161,7 @@ describe("Home Component Tests", () => {
         requestId: "test",
         errorCode: 0
       };
-      
+
       const sfCliResult: ExecuteResult = {
         command: "sf --version",
         stdout: "",
@@ -181,7 +183,9 @@ describe("Home Component Tests", () => {
       expect(home.gitInstalled).toBe(true);
       expect(home.sfCliInstalled).toBe(false);
       expect(home.hasError).toBe(true);
-      expect(home.errorMessage).toBe("The sf CLI is not installed on this machine");
+      expect(home.errorMessage).toBe(
+        "The sf CLI is not installed on this machine"
+      );
       expect(home.fullyVerified).toBe(false);
     });
 
@@ -195,7 +199,7 @@ describe("Home Component Tests", () => {
         requestId: "test",
         errorCode: 0
       };
-      
+
       const sfCliResult: ExecuteResult = {
         command: "sf --version",
         stdout: "sf version 1.0.0",
@@ -204,7 +208,7 @@ describe("Home Component Tests", () => {
         requestId: "test",
         errorCode: 0
       };
-      
+
       const gitDirResult: ExecuteResult = {
         command: "git status",
         stdout: "",
@@ -227,7 +231,9 @@ describe("Home Component Tests", () => {
       expect(home.sfCliInstalled).toBe(true);
       expect(home.inGitDir).toBe(false);
       expect(home.hasError).toBe(true);
-      expect(home.errorMessage).toBe("The current working directory is not a git repository");
+      expect(home.errorMessage).toBe(
+        "The current working directory is not a git repository"
+      );
       expect(home.fullyVerified).toBe(false);
     });
 
@@ -283,7 +289,9 @@ describe("Home Component Tests", () => {
       // Assert
       expect(home.inGitDir).toBe(false);
       expect(home.hasError).toBe(true);
-      expect(home.errorMessage).toBe("The current working directory is not a git repository");
+      expect(home.errorMessage).toBe(
+        "The current working directory is not a git repository"
+      );
     });
   });
 
@@ -422,4 +430,4 @@ describe("Home Component Tests", () => {
       expect(home.currentStep).toBe("sfCli");
     });
   });
-}); 
+});

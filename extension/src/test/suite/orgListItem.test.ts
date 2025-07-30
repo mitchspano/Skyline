@@ -24,7 +24,7 @@ describe("OrgListItem Component Tests", () => {
   beforeEach(() => {
     // Create a new instance of OrgListItem
     orgListItem = new OrgListItem();
-    
+
     // Create a mock org
     mockOrg = {
       accessToken: "test-token",
@@ -46,7 +46,7 @@ describe("OrgListItem Component Tests", () => {
       edition: "Developer",
       status: "Active"
     };
-    
+
     // Set the org property
     orgListItem.org = mockOrg;
   });
@@ -85,7 +85,7 @@ describe("OrgListItem Component Tests", () => {
   describe("handleRemoveOrg", () => {
     it("should dispatch removeorg event with org alias", () => {
       // Arrange
-      const dispatchEventSpy = jest.spyOn(orgListItem, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(orgListItem, "dispatchEvent");
       const expectedEvent = new CustomEvent("removeorg", {
         detail: "test-org",
         bubbles: true,
@@ -101,7 +101,7 @@ describe("OrgListItem Component Tests", () => {
 
     it("should include org alias in event detail", () => {
       // Arrange
-      const dispatchEventSpy = jest.spyOn(orgListItem, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(orgListItem, "dispatchEvent");
       orgListItem.org.alias = "different-org";
 
       // Act
@@ -116,7 +116,7 @@ describe("OrgListItem Component Tests", () => {
   describe("handleOpenOrg", () => {
     it("should dispatch openorg event with org alias", () => {
       // Arrange
-      const dispatchEventSpy = jest.spyOn(orgListItem, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(orgListItem, "dispatchEvent");
       const expectedEvent = new CustomEvent("openorg", {
         detail: "test-org",
         bubbles: true,
@@ -132,7 +132,7 @@ describe("OrgListItem Component Tests", () => {
 
     it("should include org alias in event detail", () => {
       // Arrange
-      const dispatchEventSpy = jest.spyOn(orgListItem, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(orgListItem, "dispatchEvent");
       orgListItem.org.alias = "different-org";
 
       // Act
@@ -147,7 +147,7 @@ describe("OrgListItem Component Tests", () => {
   describe("Event Properties", () => {
     it("should set correct event properties for removeorg event", () => {
       // Arrange
-      const dispatchEventSpy = jest.spyOn(orgListItem, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(orgListItem, "dispatchEvent");
 
       // Act
       orgListItem.handleRemoveOrg({} as CustomEvent);
@@ -161,7 +161,7 @@ describe("OrgListItem Component Tests", () => {
 
     it("should set correct event properties for openorg event", () => {
       // Arrange
-      const dispatchEventSpy = jest.spyOn(orgListItem, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(orgListItem, "dispatchEvent");
 
       // Act
       orgListItem.handleOpenOrg({} as CustomEvent);
@@ -262,7 +262,7 @@ describe("OrgListItem Component Tests", () => {
   describe("Component Integration", () => {
     it("should handle multiple event dispatches", () => {
       // Arrange
-      const dispatchEventSpy = jest.spyOn(orgListItem, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(orgListItem, "dispatchEvent");
 
       // Act
       orgListItem.handleRemoveOrg({} as CustomEvent);
@@ -270,10 +270,10 @@ describe("OrgListItem Component Tests", () => {
 
       // Assert
       expect(dispatchEventSpy).toHaveBeenCalledTimes(2);
-      
+
       const removeCall = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
       const openCall = dispatchEventSpy.mock.calls[1][0] as CustomEvent;
-      
+
       expect(removeCall.type).toBe("removeorg");
       expect(openCall.type).toBe("openorg");
     });
@@ -291,4 +291,4 @@ describe("OrgListItem Component Tests", () => {
       expect(orgListItem.org).toBe(mockOrg);
     });
   });
-}); 
+});

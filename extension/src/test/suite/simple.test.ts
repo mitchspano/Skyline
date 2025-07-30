@@ -23,4 +23,4 @@ describe("Simple Jest Test", () => {
     const result = await Promise.resolve("test");
     expect(result).toBe("test");
   });
-}); 
+});

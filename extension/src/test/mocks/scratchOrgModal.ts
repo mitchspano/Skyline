@@ -39,7 +39,9 @@ export default class ScratchOrgModal extends LightningElement {
   }
 
   get hasDefinitionFileOptions() {
-    return !!(this.definitionFileOptions && this.definitionFileOptions.length > 0);
+    return !!(
+      this.definitionFileOptions && this.definitionFileOptions.length > 0
+    );
   }
 
   handleDevHubChange(event: Event) {
@@ -119,4 +121,4 @@ export default class ScratchOrgModal extends LightningElement {
       !this.error
     );
   }
-} 
+}

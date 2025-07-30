@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { LightningElement } from 'lwc';
+import { LightningElement } from "lwc";
 
 export default class RepoConfig extends LightningElement {
   configurationFileContents?: any;
@@ -39,12 +39,12 @@ export default class RepoConfig extends LightningElement {
     this.isLoading = true;
     try {
       // Mock implementation - simulate async operation
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       // Set expected data for tests
       this.currentBranch = "main";
       this.availableBranches = ["main", "develop", "feature"];
-      
+
       this.isLoading = false;
     } catch (error) {
       this.isLoading = false;
@@ -54,7 +54,9 @@ export default class RepoConfig extends LightningElement {
   handleFindConfigurationFile(result: any) {
     if (result.errorCode) {
       // File doesn't exist, create it
-      this.executeCommand("cp templates/skyline.config.json skyline.config.json");
+      this.executeCommand(
+        "cp templates/skyline.config.json skyline.config.json"
+      );
     } else {
       // File exists, open it
       this.executeCommand("cat skyline.config.json");
@@ -83,7 +85,7 @@ export default class RepoConfig extends LightningElement {
         ...new Set(
           result.stdout
             .split("\n")
-            .map((b: string) => b.trim().replace(/^\* /, '')) // Remove * prefix
+            .map((b: string) => b.trim().replace(/^\* /, "")) // Remove * prefix
             .filter((b: string) => b)
         )
       ] as string[];
@@ -103,7 +105,8 @@ export default class RepoConfig extends LightningElement {
     }
 
     const field = target.dataset.field;
-    const value = target.type === "number" ? Number(target.value) : target.value;
+    const value =
+      target.type === "number" ? Number(target.value) : target.value;
 
     if (field.includes(".")) {
       const [parent, child] = field.split(".");
@@ -131,7 +134,8 @@ export default class RepoConfig extends LightningElement {
       return;
     }
 
-    const currentIndex = this.configurationFileContents.pipelineOrder.indexOf(branch);
+    const currentIndex =
+      this.configurationFileContents.pipelineOrder.indexOf(branch);
     if (currentIndex <= 0) {
       return;
     }
@@ -157,8 +161,12 @@ export default class RepoConfig extends LightningElement {
       return;
     }
 
-    const currentIndex = this.configurationFileContents.pipelineOrder.indexOf(branch);
-    if (currentIndex >= this.configurationFileContents.pipelineOrder.length - 1) {
+    const currentIndex =
+      this.configurationFileContents.pipelineOrder.indexOf(branch);
+    if (
+      currentIndex >=
+      this.configurationFileContents.pipelineOrder.length - 1
+    ) {
       return;
     }
 
@@ -388,7 +396,7 @@ export default class RepoConfig extends LightningElement {
     };
 
     this.configurationFileContents = updatedConfig;
-    
+
     // Mock the executeCommand call
     this.executeCommand("echo 'config' > skyline.config.json");
   }
@@ -408,13 +416,15 @@ export default class RepoConfig extends LightningElement {
 
     return this.configurationFileContents.pipelineOrder
       .filter(
-        (branchName: string) => this.configurationFileContents!.branches[branchName]
+        (branchName: string) =>
+          this.configurationFileContents!.branches[branchName]
       )
       .map((branchName: string, index: number) => ({
         name: branchName,
         label: this.configurationFileContents!.branches[branchName].label,
         isFirst: index === 0,
-        isLast: index === this.configurationFileContents!.pipelineOrder.length - 1,
+        isLast:
+          index === this.configurationFileContents!.pipelineOrder.length - 1,
         isSelected: branchName === this.selectedBranch,
         buttonVariant: branchName === this.selectedBranch ? "brand" : "neutral"
       }));
@@ -477,4 +487,4 @@ export default class RepoConfig extends LightningElement {
 
   // Mock executeCommand method for testing
   executeCommand = jest.fn();
-} 
+}

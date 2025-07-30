@@ -57,7 +57,7 @@ describe("Header Tests", () => {
       } as unknown as CustomEvent;
 
       // Spy on dispatchEvent
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act
       header.handlePageClick(mockEvent);
@@ -66,7 +66,7 @@ describe("Header Tests", () => {
       expect(header.showNavigation).toBe(false);
       expect(dispatchEventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'pagenavigation',
+          type: "pagenavigation",
           detail: Pages.orgManager
         })
       );
@@ -82,7 +82,7 @@ describe("Header Tests", () => {
         }
       } as unknown as CustomEvent;
 
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act
       header.handlePageClick(mockEvent);
@@ -90,7 +90,7 @@ describe("Header Tests", () => {
       // Assert
       expect(dispatchEventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'pagenavigation',
+          type: "pagenavigation",
           detail: Pages.home
         })
       );
@@ -106,7 +106,7 @@ describe("Header Tests", () => {
         }
       } as unknown as CustomEvent;
 
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act
       header.handlePageClick(mockEvent);
@@ -114,7 +114,7 @@ describe("Header Tests", () => {
       // Assert
       expect(dispatchEventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'pagenavigation',
+          type: "pagenavigation",
           detail: Pages.repoConfig
         })
       );
@@ -130,7 +130,7 @@ describe("Header Tests", () => {
         }
       } as unknown as CustomEvent;
 
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act
       header.handlePageClick(mockEvent);
@@ -138,7 +138,7 @@ describe("Header Tests", () => {
       // Assert
       expect(dispatchEventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'pagenavigation',
+          type: "pagenavigation",
           detail: Pages.metadataExplorer
         })
       );
@@ -154,7 +154,7 @@ describe("Header Tests", () => {
         }
       } as unknown as CustomEvent;
 
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act
       header.handlePageClick(mockEvent);
@@ -162,7 +162,7 @@ describe("Header Tests", () => {
       // Assert
       expect(dispatchEventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'pagenavigation',
+          type: "pagenavigation",
           detail: Pages.pipeline
         })
       );
@@ -178,7 +178,7 @@ describe("Header Tests", () => {
         }
       } as unknown as CustomEvent;
 
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act
       header.handlePageClick(mockEvent);
@@ -187,7 +187,7 @@ describe("Header Tests", () => {
       expect(header.showNavigation).toBe(false);
       expect(dispatchEventSpy).toHaveBeenCalled();
       const callArgs = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
-      expect(callArgs.type).toBe('pagenavigation');
+      expect(callArgs.type).toBe("pagenavigation");
       expect(callArgs.detail).toBeNull();
     });
 
@@ -201,7 +201,7 @@ describe("Header Tests", () => {
         }
       } as unknown as CustomEvent;
 
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act
       header.handlePageClick(mockEvent);
@@ -210,7 +210,7 @@ describe("Header Tests", () => {
       expect(header.showNavigation).toBe(false);
       expect(dispatchEventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'pagenavigation',
+          type: "pagenavigation",
           detail: ""
         })
       );
@@ -286,7 +286,7 @@ describe("Header Tests", () => {
         Pages.pipeline
       ];
 
-      testPages.forEach(page => {
+      testPages.forEach((page) => {
         // Act
         header.currentPage = page;
 
@@ -307,7 +307,7 @@ describe("Header Tests", () => {
         }
       } as unknown as CustomEvent;
 
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act - Open navigation
       header.handleNavigationClick();
@@ -320,7 +320,7 @@ describe("Header Tests", () => {
       expect(header.showNavigation).toBe(false);
       expect(dispatchEventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'pagenavigation',
+          type: "pagenavigation",
           detail: Pages.metadataExplorer
         })
       );
@@ -335,7 +335,7 @@ describe("Header Tests", () => {
         target: { dataset: { page: Pages.pipeline } }
       } as unknown as CustomEvent;
 
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act & Assert
       // Set current page
@@ -351,7 +351,7 @@ describe("Header Tests", () => {
       expect(header.showNavigation).toBe(false);
       expect(dispatchEventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'pagenavigation',
+          type: "pagenavigation",
           detail: Pages.home
         })
       );
@@ -365,7 +365,7 @@ describe("Header Tests", () => {
       expect(header.showNavigation).toBe(false);
       expect(dispatchEventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'pagenavigation',
+          type: "pagenavigation",
           detail: Pages.pipeline
         })
       );
@@ -382,7 +382,7 @@ describe("Header Tests", () => {
         target: null
       } as unknown as CustomEvent;
 
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act
       header.handlePageClick(mockEvent);
@@ -391,7 +391,7 @@ describe("Header Tests", () => {
       expect(header.showNavigation).toBe(false);
       expect(dispatchEventSpy).toHaveBeenCalled();
       const callArgs = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
-      expect(callArgs.type).toBe('pagenavigation');
+      expect(callArgs.type).toBe("pagenavigation");
       expect(callArgs.detail).toBeNull();
     });
 
@@ -401,7 +401,7 @@ describe("Header Tests", () => {
         target: {}
       } as unknown as CustomEvent;
 
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act
       header.handlePageClick(mockEvent);
@@ -410,7 +410,7 @@ describe("Header Tests", () => {
       expect(header.showNavigation).toBe(false);
       expect(dispatchEventSpy).toHaveBeenCalled();
       const callArgs = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
-      expect(callArgs.type).toBe('pagenavigation');
+      expect(callArgs.type).toBe("pagenavigation");
       expect(callArgs.detail).toBeNull();
     });
 
@@ -434,7 +434,7 @@ describe("Header Tests", () => {
         }
       } as unknown as CustomEvent;
 
-      const dispatchEventSpy = jest.spyOn(header, 'dispatchEvent');
+      const dispatchEventSpy = jest.spyOn(header, "dispatchEvent");
 
       // Act
       for (let i = 0; i < 5; i++) {
@@ -446,4 +446,4 @@ describe("Header Tests", () => {
       expect(dispatchEventSpy).toHaveBeenCalledTimes(5);
     });
   });
-}); 
+});

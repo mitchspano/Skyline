@@ -23,14 +23,16 @@ jest.mock("lightning-base-components/src/lightning/toast/toast.js", () => ({
 }));
 
 // Mock window.extensionPath
-Object.defineProperty(window, 'extensionPath', {
-  value: '/test/extension/path',
+Object.defineProperty(window, "extensionPath", {
+  value: "/test/extension/path",
   writable: true
 });
 
 describe("RepoConfig Component Tests", () => {
   let repoConfig: RepoConfig;
-  let mockExecuteCommand: jest.MockedFunction<(command: string) => Promise<ExecuteResult>>;
+  let mockExecuteCommand: jest.MockedFunction<
+    (command: string) => Promise<ExecuteResult>
+  >;
 
   // Helper function to create test environment config
   const createTestEnvironmentConfig = (label: string) => ({
@@ -50,10 +52,10 @@ describe("RepoConfig Component Tests", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Create a new instance of RepoConfig
     repoConfig = new RepoConfig();
-    
+
     // Mock the executeCommand method
     mockExecuteCommand = jest.fn();
     (repoConfig as any).executeCommand = mockExecuteCommand;
@@ -62,11 +64,11 @@ describe("RepoConfig Component Tests", () => {
   describe("connectedCallback", () => {
     it("should call initializeConfig when connected", () => {
       // Arrange
-      const initConfigSpy = jest.spyOn(repoConfig as any, 'initializeConfig');
-      
+      const initConfigSpy = jest.spyOn(repoConfig as any, "initializeConfig");
+
       // Act
       repoConfig.connectedCallback();
-      
+
       // Assert
       expect(initConfigSpy).toHaveBeenCalled();
     });
@@ -83,7 +85,7 @@ describe("RepoConfig Component Tests", () => {
         requestId: "test",
         errorCode: 0
       };
-      
+
       const branchResult: ExecuteResult = {
         command: "git rev-parse --abbrev-ref HEAD",
         stdout: "main",
@@ -92,9 +94,10 @@ describe("RepoConfig Component Tests", () => {
         requestId: "test",
         errorCode: 0
       };
-      
+
       const branchesResult: ExecuteResult = {
-        command: "git branch -a | grep -v HEAD | sed -e 's/^[ *]*//' -e 's#remotes/origin/##'",
+        command:
+          "git branch -a | grep -v HEAD | sed -e 's/^[ *]*//' -e 's#remotes/origin/##'",
         stdout: "main\ndevelop\nfeature",
         stderr: "",
         elementId: "test",
@@ -113,7 +116,11 @@ describe("RepoConfig Component Tests", () => {
       // Assert
       expect(repoConfig.isLoading).toBe(false);
       expect(repoConfig.currentBranch).toBe("main");
-      expect(repoConfig.availableBranches).toEqual(["main", "develop", "feature"]);
+      expect(repoConfig.availableBranches).toEqual([
+        "main",
+        "develop",
+        "feature"
+      ]);
     });
 
     it("should handle initialization errors", async () => {
@@ -141,7 +148,7 @@ describe("RepoConfig Component Tests", () => {
         errorCode: 0
       };
 
-      const openConfigSpy = jest.spyOn(repoConfig as any, 'executeCommand');
+      const openConfigSpy = jest.spyOn(repoConfig as any, "executeCommand");
 
       // Act
       repoConfig.handleFindConfigurationFile(result);
@@ -161,13 +168,15 @@ describe("RepoConfig Component Tests", () => {
         errorCode: 1
       };
 
-      const createConfigSpy = jest.spyOn(repoConfig as any, 'executeCommand');
+      const createConfigSpy = jest.spyOn(repoConfig as any, "executeCommand");
 
       // Act
       repoConfig.handleFindConfigurationFile(result);
 
       // Assert
-      expect(createConfigSpy).toHaveBeenCalledWith(expect.stringContaining("cp"));
+      expect(createConfigSpy).toHaveBeenCalledWith(
+        expect.stringContaining("cp")
+      );
     });
   });
 
@@ -271,7 +280,12 @@ describe("RepoConfig Component Tests", () => {
       repoConfig.handleGetAllBranches(result);
 
       // Assert
-      expect(repoConfig.availableBranches).toEqual(["main", "develop", "feature", "current"]);
+      expect(repoConfig.availableBranches).toEqual([
+        "main",
+        "develop",
+        "feature",
+        "current"
+      ]);
     });
 
     it("should handle empty branch list", () => {
@@ -314,7 +328,7 @@ describe("RepoConfig Component Tests", () => {
     it("should update edited config with string value", () => {
       // Arrange
       repoConfig.editedConfig = createTestEnvironmentConfig("Test");
-      
+
       const event = {
         target: {
           dataset: { field: "label" },
@@ -332,7 +346,7 @@ describe("RepoConfig Component Tests", () => {
     it("should update edited config with number value", () => {
       // Arrange
       repoConfig.editedConfig = createTestEnvironmentConfig("Test");
-      
+
       const event = {
         target: {
           dataset: { field: "testLevels.presubmit" },
@@ -344,7 +358,9 @@ describe("RepoConfig Component Tests", () => {
       repoConfig.handleInputChange(event);
 
       // Assert
-      expect(repoConfig.editedConfig!.testLevels.presubmit).toBe("RunAllTestsInOrg");
+      expect(repoConfig.editedConfig!.testLevels.presubmit).toBe(
+        "RunAllTestsInOrg"
+      );
     });
 
     it("should not update if no field or edited config", () => {
@@ -376,20 +392,24 @@ describe("RepoConfig Component Tests", () => {
           feature: createTestEnvironmentConfig("Feature")
         }
       };
-      
+
       const event = {
         target: {
           dataset: { branch: "develop" }
         }
       } as unknown as CustomEvent;
 
-      const saveConfigSpy = jest.spyOn(repoConfig as any, 'saveConfig');
+      const saveConfigSpy = jest.spyOn(repoConfig as any, "saveConfig");
 
       // Act
       repoConfig.handleMoveUp(event);
 
       // Assert
-      expect(repoConfig.configurationFileContents!.pipelineOrder).toEqual(["develop", "main", "feature"]);
+      expect(repoConfig.configurationFileContents!.pipelineOrder).toEqual([
+        "develop",
+        "main",
+        "feature"
+      ]);
       expect(saveConfigSpy).toHaveBeenCalled();
     });
 
@@ -403,20 +423,23 @@ describe("RepoConfig Component Tests", () => {
           develop: createTestEnvironmentConfig("Development")
         }
       };
-      
+
       const event = {
         target: {
           dataset: { branch: "main" }
         }
       } as unknown as CustomEvent;
 
-      const saveConfigSpy = jest.spyOn(repoConfig as any, 'saveConfig');
+      const saveConfigSpy = jest.spyOn(repoConfig as any, "saveConfig");
 
       // Act
       repoConfig.handleMoveUp(event);
 
       // Assert
-      expect(repoConfig.configurationFileContents!.pipelineOrder).toEqual(["main", "develop"]);
+      expect(repoConfig.configurationFileContents!.pipelineOrder).toEqual([
+        "main",
+        "develop"
+      ]);
       expect(saveConfigSpy).not.toHaveBeenCalled();
     });
   });
@@ -433,20 +456,24 @@ describe("RepoConfig Component Tests", () => {
           feature: createTestEnvironmentConfig("Feature")
         }
       };
-      
+
       const event = {
         target: {
           dataset: { branch: "develop" }
         }
       } as unknown as CustomEvent;
 
-      const saveConfigSpy = jest.spyOn(repoConfig as any, 'saveConfig');
+      const saveConfigSpy = jest.spyOn(repoConfig as any, "saveConfig");
 
       // Act
       repoConfig.handleMoveDown(event);
 
       // Assert
-      expect(repoConfig.configurationFileContents!.pipelineOrder).toEqual(["main", "feature", "develop"]);
+      expect(repoConfig.configurationFileContents!.pipelineOrder).toEqual([
+        "main",
+        "feature",
+        "develop"
+      ]);
       expect(saveConfigSpy).toHaveBeenCalled();
     });
 
@@ -460,20 +487,23 @@ describe("RepoConfig Component Tests", () => {
           develop: createTestEnvironmentConfig("Development")
         }
       };
-      
+
       const event = {
         target: {
           dataset: { branch: "develop" }
         }
       } as unknown as CustomEvent;
 
-      const saveConfigSpy = jest.spyOn(repoConfig as any, 'saveConfig');
+      const saveConfigSpy = jest.spyOn(repoConfig as any, "saveConfig");
 
       // Act
       repoConfig.handleMoveDown(event);
 
       // Assert
-      expect(repoConfig.configurationFileContents!.pipelineOrder).toEqual(["main", "develop"]);
+      expect(repoConfig.configurationFileContents!.pipelineOrder).toEqual([
+        "main",
+        "develop"
+      ]);
       expect(saveConfigSpy).not.toHaveBeenCalled();
     });
   });
@@ -491,7 +521,7 @@ describe("RepoConfig Component Tests", () => {
         }
       };
 
-      const saveConfigSpy = jest.spyOn(repoConfig as any, 'saveConfig');
+      const saveConfigSpy = jest.spyOn(repoConfig as any, "saveConfig");
 
       // Act
       repoConfig.handleDeleteBranchConfig();
@@ -508,7 +538,7 @@ describe("RepoConfig Component Tests", () => {
     it("should not delete if no branch selected", () => {
       // Arrange
       repoConfig.selectedBranch = undefined;
-      const saveConfigSpy = jest.spyOn(repoConfig as any, 'saveConfig');
+      const saveConfigSpy = jest.spyOn(repoConfig as any, "saveConfig");
 
       // Act
       repoConfig.handleDeleteBranchConfig();
@@ -528,12 +558,12 @@ describe("RepoConfig Component Tests", () => {
           main: createTestEnvironmentConfig("Production")
         }
       };
-      
+
       const event = {
         detail: { branch: "feature" }
       } as CustomEvent;
 
-      const saveConfigSpy = jest.spyOn(repoConfig as any, 'saveConfig');
+      const saveConfigSpy = jest.spyOn(repoConfig as any, "saveConfig");
 
       // Act
       repoConfig.handleAddNewBranch(event);
@@ -582,7 +612,9 @@ describe("RepoConfig Component Tests", () => {
 
       // Assert
       expect(repoConfig.isEditing).toBe(true);
-      expect(repoConfig.editedConfig).toEqual(createTestEnvironmentConfig("Production"));
+      expect(repoConfig.editedConfig).toEqual(
+        createTestEnvironmentConfig("Production")
+      );
     });
   });
 
@@ -590,7 +622,8 @@ describe("RepoConfig Component Tests", () => {
     it("should save edited configuration", () => {
       // Arrange
       repoConfig.selectedBranch = "main";
-      repoConfig.editedConfig = createTestEnvironmentConfig("Updated Production");
+      repoConfig.editedConfig =
+        createTestEnvironmentConfig("Updated Production");
       repoConfig.configurationFileContents = {
         version: "1.0.0",
         pipelineOrder: ["main"],
@@ -599,7 +632,7 @@ describe("RepoConfig Component Tests", () => {
         }
       } as any;
 
-      const saveConfigSpy = jest.spyOn(repoConfig as any, 'saveConfig');
+      const saveConfigSpy = jest.spyOn(repoConfig as any, "saveConfig");
 
       // Act
       repoConfig.handleSaveEdit();
@@ -644,7 +677,9 @@ describe("RepoConfig Component Tests", () => {
 
       // Assert
       expect(repoConfig.editedTicketingConfig!.system).toBe("Jira");
-      expect(repoConfig.editedTicketingConfig!.ticketIdRegex).toBe("[A-Z]+-\\d+");
+      expect(repoConfig.editedTicketingConfig!.ticketIdRegex).toBe(
+        "[A-Z]+-\\d+"
+      );
     });
 
     it("should clear custom label for non-Other systems", () => {
@@ -654,7 +689,7 @@ describe("RepoConfig Component Tests", () => {
         ticketIdRegex: "",
         customLabel: "Custom Label"
       };
-      
+
       const event = {
         detail: { value: "Jira" }
       } as CustomEvent;
@@ -674,7 +709,7 @@ describe("RepoConfig Component Tests", () => {
         system: "Jira",
         ticketIdRegex: ""
       };
-      
+
       const event = {
         detail: { value: "[A-Z]+-\\d+" }
       } as CustomEvent;
@@ -683,7 +718,9 @@ describe("RepoConfig Component Tests", () => {
       repoConfig.handleTicketingRegexChange(event);
 
       // Assert
-      expect(repoConfig.editedTicketingConfig!.ticketIdRegex).toBe("[A-Z]+-\\d+");
+      expect(repoConfig.editedTicketingConfig!.ticketIdRegex).toBe(
+        "[A-Z]+-\\d+"
+      );
     });
 
     it("should handle invalid regex pattern", () => {
@@ -692,7 +729,7 @@ describe("RepoConfig Component Tests", () => {
         system: "Jira",
         ticketIdRegex: ""
       };
-      
+
       const event = {
         detail: { value: "[invalid" }
       } as CustomEvent;
@@ -756,7 +793,9 @@ describe("RepoConfig Component Tests", () => {
         } as any;
 
         // Act & Assert
-        expect(repoConfig.currentEnvironmentConfig).toEqual(createTestEnvironmentConfig("Production"));
+        expect(repoConfig.currentEnvironmentConfig).toEqual(
+          createTestEnvironmentConfig("Production")
+        );
       });
 
       it("should return undefined when no branch selected", () => {
@@ -776,9 +815,18 @@ describe("RepoConfig Component Tests", () => {
         // Assert
         expect(result).toHaveLength(4);
         expect(result[0]).toEqual({ label: "No Test Run", value: "NoTestRun" });
-        expect(result[1]).toEqual({ label: "Run Specified Tests", value: "RunSpecifiedTests" });
-        expect(result[2]).toEqual({ label: "Run Local Tests", value: "RunLocalTests" });
-        expect(result[3]).toEqual({ label: "Run All Tests in Org", value: "RunAllTestsInOrg" });
+        expect(result[1]).toEqual({
+          label: "Run Specified Tests",
+          value: "RunSpecifiedTests"
+        });
+        expect(result[2]).toEqual({
+          label: "Run Local Tests",
+          value: "RunLocalTests"
+        });
+        expect(result[3]).toEqual({
+          label: "Run All Tests in Org",
+          value: "RunAllTestsInOrg"
+        });
       });
     });
 
@@ -995,14 +1043,16 @@ describe("RepoConfig Component Tests", () => {
             main: createTestEnvironmentConfig("Production")
           }
         };
-        
-        const saveConfigSpy = jest.spyOn(repoConfig as any, 'executeCommand');
+
+        const saveConfigSpy = jest.spyOn(repoConfig as any, "executeCommand");
 
         // Act
         (repoConfig as any).saveConfig(config);
 
         // Assert
-        expect(saveConfigSpy).toHaveBeenCalledWith(expect.stringContaining("echo"));
+        expect(saveConfigSpy).toHaveBeenCalledWith(
+          expect.stringContaining("echo")
+        );
       });
 
       it("should add missing branches to pipeline order", () => {
@@ -1020,8 +1070,11 @@ describe("RepoConfig Component Tests", () => {
         (repoConfig as any).saveConfig(config);
 
         // Assert
-        expect(repoConfig.configurationFileContents!.pipelineOrder).toEqual(["main", "develop"]);
+        expect(repoConfig.configurationFileContents!.pipelineOrder).toEqual([
+          "main",
+          "develop"
+        ]);
       });
     });
   });
-}); 
+});

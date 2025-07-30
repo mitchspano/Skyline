@@ -15,4 +15,4 @@
  */
 
 // Mock LWC synthetic shadow
-export default {}; 
+export default {};

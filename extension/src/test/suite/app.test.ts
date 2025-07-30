@@ -44,12 +44,12 @@ describe("App Component Tests", () => {
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Reset the singleton instance
     (App as any).instance = undefined;
-    
+
     // Mock window object
-    Object.defineProperty(global, 'window', {
+    Object.defineProperty(global, "window", {
       value: mockWindow,
       writable: true
     });
@@ -105,9 +105,9 @@ describe("App Component Tests", () => {
     it("should initialize config as empty object when window.vsCodeConfig is undefined", () => {
       // Reset instance
       (App as any).instance = undefined;
-      
+
       // Mock window without vsCodeConfig
-      Object.defineProperty(global, 'window', {
+      Object.defineProperty(global, "window", {
         value: { extensionPath: "/test/path" },
         writable: true
       });
@@ -121,7 +121,7 @@ describe("App Component Tests", () => {
     it("should return existing instance if available", () => {
       const instance1 = App.getInstance();
       const instance2 = App.getInstance();
-      
+
       expect(instance1).toBe(instance2);
       expect(instance1).toBe(app);
     });
@@ -129,7 +129,7 @@ describe("App Component Tests", () => {
     it("should create new instance if none exists", () => {
       // Reset instance
       (App as any).instance = undefined;
-      
+
       const instance = App.getInstance();
       expect(instance).toBeInstanceOf(App);
       expect((App as any).instance).toBe(instance);
@@ -150,7 +150,7 @@ describe("App Component Tests", () => {
 
     it("should return true when debugMode is enabled", () => {
       // Mock window with debug mode enabled
-      Object.defineProperty(global, 'window', {
+      Object.defineProperty(global, "window", {
         value: {
           ...mockWindow,
           vsCodeConfig: { debugMode: true }
@@ -167,7 +167,7 @@ describe("App Component Tests", () => {
 
     it("should return false when config is undefined", () => {
       // Mock window without config
-      Object.defineProperty(global, 'window', {
+      Object.defineProperty(global, "window", {
         value: { extensionPath: "/test/path" },
         writable: true
       });
@@ -198,7 +198,7 @@ describe("App Component Tests", () => {
 
     it("should log debug message when debug mode is enabled", async () => {
       // Enable debug mode
-      Object.defineProperty(global, 'window', {
+      Object.defineProperty(global, "window", {
         value: {
           ...mockWindow,
           vsCodeConfig: { debugMode: true }
@@ -210,7 +210,7 @@ describe("App Component Tests", () => {
       (App as any).instance = undefined;
       new App();
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleSpy = jest.spyOn(console, "log").mockImplementation();
 
       App.executeCommand("debug-command");
 
@@ -222,7 +222,7 @@ describe("App Component Tests", () => {
     });
 
     it("should not log debug message when debug mode is disabled", async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleSpy = jest.spyOn(console, "log").mockImplementation();
 
       App.executeCommand("normal-command");
 
@@ -268,7 +268,7 @@ describe("App Component Tests", () => {
 
       // The promise should still be pending
       expect(promise).toBeInstanceOf(Promise);
-      
+
       // Clean up the pending promise
       const pendingResolvers = (App as any).pendingResolvers;
       pendingResolvers.clear();
@@ -276,7 +276,7 @@ describe("App Component Tests", () => {
 
     it("should log debug message when debug mode is enabled", () => {
       // Enable debug mode
-      Object.defineProperty(global, 'window', {
+      Object.defineProperty(global, "window", {
         value: {
           ...mockWindow,
           vsCodeConfig: { debugMode: true }
@@ -288,7 +288,7 @@ describe("App Component Tests", () => {
       (App as any).instance = undefined;
       new App();
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleSpy = jest.spyOn(console, "log").mockImplementation();
 
       const result: ExecuteResult = {
         command: "test-command",
@@ -297,13 +297,16 @@ describe("App Component Tests", () => {
 
       App.handleCommandResult(result);
 
-      expect(consoleSpy).toHaveBeenCalledWith("[DEBUG] Command result:", result);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[DEBUG] Command result:",
+        result
+      );
 
       consoleSpy.mockRestore();
     });
 
     it("should not log debug message when debug mode is disabled", () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleSpy = jest.spyOn(console, "log").mockImplementation();
 
       const result: ExecuteResult = {
         command: "test-command",
@@ -482,4 +485,4 @@ describe("App Component Tests", () => {
       expect(app.showOrgManager).toBe(true);
     });
   });
-}); 
+});

@@ -15,4 +15,4 @@
  */
 
 // Mock child_process
-export const exec = jest.fn(); 
+export const exec = jest.fn();

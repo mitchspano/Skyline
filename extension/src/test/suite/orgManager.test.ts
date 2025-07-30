@@ -20,21 +20,23 @@ import App from "../../modules/s/app/app";
 
 describe("OrgManager Component Tests", () => {
   let orgManager: OrgManager;
-  let mockExecuteCommand: jest.MockedFunction<(command: string) => Promise<ExecuteResult>>;
+  let mockExecuteCommand: jest.MockedFunction<
+    (command: string) => Promise<ExecuteResult>
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Create a new instance of OrgManager
     orgManager = new OrgManager();
-    
+
     // Mock the App.executeCommand method
     mockExecuteCommand = jest.fn();
     (App as any).executeCommand = mockExecuteCommand;
-    
+
     // Mock the handleError method to prevent errors
     (orgManager as any).handleError = jest.fn();
-    
+
     // Initialize properties manually since @track doesn't work in tests
     orgManager.devHubs = [];
     orgManager.scratchOrgs = [];
@@ -68,13 +70,13 @@ describe("OrgManager Component Tests", () => {
     });
 
     it("should have required methods", () => {
-      expect(typeof orgManager.loadOrgs).toBe('function');
-      expect(typeof orgManager.handleAuthOrg).toBe('function');
-      expect(typeof orgManager.handleRemoveOrg).toBe('function');
-      expect(typeof orgManager.handleOpenOrg).toBe('function');
-      expect(typeof orgManager.handleCreateScratchOrg).toBe('function');
-      expect(typeof orgManager.handleScratchOrgModalClose).toBe('function');
-      expect(typeof orgManager.handleScratchOrgCreate).toBe('function');
+      expect(typeof orgManager.loadOrgs).toBe("function");
+      expect(typeof orgManager.handleAuthOrg).toBe("function");
+      expect(typeof orgManager.handleRemoveOrg).toBe("function");
+      expect(typeof orgManager.handleOpenOrg).toBe("function");
+      expect(typeof orgManager.handleCreateScratchOrg).toBe("function");
+      expect(typeof orgManager.handleScratchOrgModalClose).toBe("function");
+      expect(typeof orgManager.handleScratchOrgCreate).toBe("function");
     });
   });
 
@@ -252,9 +254,11 @@ describe("OrgManager Component Tests", () => {
       mockExecuteCommand.mockResolvedValue(removeResult);
 
       // Act & Assert
-      await expect(orgManager.handleRemoveOrg({
-        detail: "test-org"
-      } as CustomEvent)).resolves.not.toThrow();
+      await expect(
+        orgManager.handleRemoveOrg({
+          detail: "test-org"
+        } as CustomEvent)
+      ).resolves.not.toThrow();
     });
 
     it("should handle removal error", async () => {
@@ -295,9 +299,11 @@ describe("OrgManager Component Tests", () => {
       mockExecuteCommand.mockResolvedValue(openResult);
 
       // Act & Assert
-      await expect(orgManager.handleOpenOrg({
-        detail: "test-org"
-      } as CustomEvent)).resolves.not.toThrow();
+      await expect(
+        orgManager.handleOpenOrg({
+          detail: "test-org"
+        } as CustomEvent)
+      ).resolves.not.toThrow();
     });
 
     it("should handle open error", async () => {
@@ -428,7 +434,8 @@ describe("OrgManager Component Tests", () => {
     it("should be callable", async () => {
       // Arrange
       const createResult: ExecuteResult = {
-        command: "sf org create scratch --target-dev-hub devhub-org --alias test-scratch --definition-file scratch-def.json --json",
+        command:
+          "sf org create scratch --target-dev-hub devhub-org --alias test-scratch --definition-file scratch-def.json --json",
         stdout: JSON.stringify({
           status: 0,
           result: {
@@ -446,19 +453,22 @@ describe("OrgManager Component Tests", () => {
       mockExecuteCommand.mockResolvedValue(createResult);
 
       // Act & Assert
-      await expect(orgManager.handleScratchOrgCreate({
-        detail: {
-          devHub: "devhub-org",
-          alias: "test-scratch",
-          definitionFile: "scratch-def.json"
-        }
-      } as CustomEvent)).resolves.not.toThrow();
+      await expect(
+        orgManager.handleScratchOrgCreate({
+          detail: {
+            devHub: "devhub-org",
+            alias: "test-scratch",
+            definitionFile: "scratch-def.json"
+          }
+        } as CustomEvent)
+      ).resolves.not.toThrow();
     });
 
     it("should handle creation error", async () => {
       // Arrange
       const createResult: ExecuteResult = {
-        command: "sf org create scratch --target-dev-hub devhub-org --alias test-scratch --definition-file scratch-def.json --json",
+        command:
+          "sf org create scratch --target-dev-hub devhub-org --alias test-scratch --definition-file scratch-def.json --json",
         stdout: "",
         stderr: "Creation failed",
         elementId: "test",
@@ -484,7 +494,8 @@ describe("OrgManager Component Tests", () => {
     it("should handle creation with non-zero status", async () => {
       // Arrange
       const createResult: ExecuteResult = {
-        command: "sf org create scratch --target-dev-hub devhub-org --alias test-scratch --definition-file scratch-def.json --json",
+        command:
+          "sf org create scratch --target-dev-hub devhub-org --alias test-scratch --definition-file scratch-def.json --json",
         stdout: JSON.stringify({
           status: 1,
           warnings: ["Creation failed"]
@@ -514,7 +525,8 @@ describe("OrgManager Component Tests", () => {
     it("should handle no output from creation command", async () => {
       // Arrange
       const createResult: ExecuteResult = {
-        command: "sf org create scratch --target-dev-hub devhub-org --alias test-scratch --definition-file scratch-def.json --json",
+        command:
+          "sf org create scratch --target-dev-hub devhub-org --alias test-scratch --definition-file scratch-def.json --json",
         stdout: "",
         stderr: "",
         elementId: "test",
@@ -592,4 +604,4 @@ describe("OrgManager Component Tests", () => {
       expect(orgManager.hasOrgs).toBe(false);
     });
   });
-}); 
+});

@@ -113,7 +113,7 @@ export default class App extends LightningElement {
    */
   static async executeCommand(command: string): Promise<ExecuteResult> {
     const requestId = "test-uuid-123"; // Mock UUID for testing
-    
+
     // Post message to VS Code
     App.vscode.postMessage({
       command,
@@ -122,7 +122,9 @@ export default class App extends LightningElement {
 
     // Log in debug mode
     if (App.isDebugMode()) {
-      console.log(`[DEBUG] Sending command: ${command}, requestId: ${requestId}`);
+      console.log(
+        `[DEBUG] Sending command: ${command}, requestId: ${requestId}`
+      );
     }
 
     // Create a promise that will be resolved when handleCommandResult is called
@@ -189,4 +191,4 @@ export default class App extends LightningElement {
   get showOrgManager() {
     return this.currentPage === Pages.orgManager;
   }
-} 
+}

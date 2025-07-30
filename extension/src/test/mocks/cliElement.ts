@@ -53,4 +53,4 @@ export default class CliElement extends LightningElement {
 }
 
 // Import App at the end to avoid circular dependency
-import App from "./app"; 
+import App from "./app";
