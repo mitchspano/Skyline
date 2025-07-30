@@ -30,3 +30,7 @@ jobs:
       - name: Compile
         working-directory: ./extension
         run: npm run compile
+
+      - name: Run tests
+        working-directory: ./extension
+        run: npm test
