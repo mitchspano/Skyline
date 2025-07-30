@@ -40,7 +40,7 @@
     "compile": "webpack",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map && node scripts/prepare-templates.js",
-    "pretest": "npm run compile && npm run lint",
+    "pretest": "npm run lint",
     "lint": "eslint src --ext ts",
     "test": "jest",
     "test:watch": "jest --watch",
