@@ -41,7 +41,8 @@ export enum Pages {
   orgManager = "Org Manager",
   repoConfig = "Project Configuration",
   metadataExplorer = "Metadata Explorer",
-  pipeline = "Pipeline"
+  pipeline = "Pipeline",
+  restExplorer = "REST Explorer"
 }
 
 /**
@@ -185,5 +186,9 @@ export default class App extends LightningElement {
 
   get showOrgManager() {
     return this.currentPage === Pages.orgManager;
+  }
+
+  get showRestExplorer() {
+    return this.currentPage === Pages.restExplorer;
   }
 }

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/// <reference types="jest" />
+
 // Mock LWC
 export const createElement = jest.fn();
 
@@ -57,19 +59,10 @@ export class LightningElement {
 export const track = (target: any, propertyKey?: string) => {
   if (propertyKey) {
     // Property decorator - make it reactive for testing
-    const descriptor = Object.getOwnPropertyDescriptor(target, propertyKey);
-    if (descriptor) {
-      return descriptor;
-    }
     return {
       configurable: true,
       enumerable: true,
-      get(this: any): any {
-        return (this as any)[`_${propertyKey}`];
-      },
-      set(this: any, value: any): void {
-        (this as any)[`_${propertyKey}`] = value;
-      }
+      writable: true
     };
   } else {
     // Class decorator or parameter decorator

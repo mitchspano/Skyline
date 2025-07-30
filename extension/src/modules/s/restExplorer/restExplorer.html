@@ -1,0 +1,292 @@
+<!--
+ Copyright 2025 Mitch Spano
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<template>
+  <div class="slds-p-around_medium slds-text-color_default">
+    <!-- Header -->
+    <div class="slds-page-header">
+      <div class="slds-page-header__row">
+        <div class="slds-page-header__col-title">
+          <div class="slds-media">
+            <div class="slds-media__figure">
+              <span class="slds-icon_container slds-icon-standard-api">
+                <lightning-icon
+                  icon-name="utility:apex"
+                  size="medium"
+                ></lightning-icon>
+              </span>
+            </div>
+            <div class="slds-media__body">
+              <div class="slds-page-header__name">
+                <div class="slds-page-header__name-title">
+                  <h1>
+                    <span class="slds-page-header__title">REST Explorer</span>
+                  </h1>
+                </div>
+              </div>
+              <p class="slds-page-header__name-meta">
+                Test Salesforce REST API endpoints
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Authentication Check -->
+    <template lwc:if={showAuthCheck}>
+      <div class="slds-card">
+        <div class="slds-card__body slds-card__body_inner">
+          <div class="slds-is-relative slds-p-around_large">
+            <div
+              role="status"
+              class="slds-spinner slds-spinner_medium slds-spinner_brand"
+            >
+              <span class="slds-assistive-text">Loading</span>
+              <div class="slds-spinner__dot-a"></div>
+              <div class="slds-spinner__dot-b"></div>
+            </div>
+            <p class="slds-text-align_center slds-p-top_medium">
+              Checking authentication...
+            </p>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Not Authenticated Message -->
+    <template lwc:if={showNotAuthenticatedMessage}>
+      <div class="slds-card">
+        <div class="slds-card__body slds-card__body_inner">
+          <div class="slds-text-align_center slds-p-around_large">
+            <lightning-icon
+              icon-name="utility:lock"
+              size="large"
+              class="slds-m-bottom_medium"
+            ></lightning-icon>
+            <h2 class="slds-text-heading_medium slds-m-bottom_small">
+              Authentication Required
+            </h2>
+            <p class="slds-text-body_regular slds-m-bottom_medium">
+              You need to be authenticated to a Salesforce org to use the REST
+              Explorer.
+            </p>
+            <template lwc:if={showAuthError}>
+              <div
+                class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error slds-m-bottom_medium"
+                role="alert"
+              >
+                <span class="slds-assistive-text">error</span>
+                <lightning-icon
+                  icon-name="utility:error"
+                  size="x-small"
+                  class="slds-m-right_x-small"
+                ></lightning-icon>
+                <h2>{authError}</h2>
+              </div>
+            </template>
+            <button
+              class="slds-button slds-button_brand"
+              onclick={handleAuthenticate}
+              disabled={isAuthButtonLoading}
+            >
+              <lightning-icon
+                icon-name="utility:login"
+                size="x-small"
+                class="slds-m-right_x-small"
+              ></lightning-icon>
+              <span lwc:if={isAuthButtonLoading}>Authenticating...</span>
+              <span lwc:else>Authenticate to Salesforce Org</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Main Content (only shown when authenticated) -->
+    <template lwc:if={showMainContent}>
+      <!-- Request Panel -->
+      <div class="slds-card slds-m-bottom_medium">
+        <div class="slds-card__header">
+          <h2 class="slds-card__header-title">
+            <span class="slds-text-heading_small">Request</span>
+          </h2>
+        </div>
+        <div class="slds-card__body slds-card__body_inner">
+          <!-- HTTP Method Selection -->
+          <div class="slds-form-element slds-m-bottom_medium">
+            <label class="slds-form-element__label">HTTP Method</label>
+            <div class="slds-form-element__control">
+              <lightning-button-group>
+                <template for:each={httpMethods} for:item="method">
+                  <lightning-button
+                    key={method.value}
+                    label={method.label}
+                    variant={method.variant}
+                    onclick={handleMethodChange}
+                    data-method={method.value}
+                  ></lightning-button>
+                </template>
+              </lightning-button-group>
+            </div>
+          </div>
+
+          <!-- Endpoint URL -->
+          <div class="slds-form-element slds-m-bottom_medium">
+            <label class="slds-form-element__label" for="endpoint">
+              <abbr class="slds-required" title="required">*</abbr>Endpoint Path
+            </label>
+            <div class="slds-form-element__control">
+              <div class="slds-input-has-icon slds-input-has-icon_left">
+                <lightning-icon
+                  icon-name="utility:link"
+                  size="x-small"
+                  class="slds-input__icon slds-input__icon_left"
+                ></lightning-icon>
+                <input
+                  type="text"
+                  id="endpoint"
+                  class="slds-input"
+                  placeholder="/services/data/v58.0/sobjects/Account"
+                  value={endpointPath}
+                  onchange={handleEndpointChange}
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Request Body (shown for POST, PUT, PATCH) -->
+          <template lwc:if={showRequestBody}>
+            <div class="slds-form-element slds-m-bottom_medium">
+              <label class="slds-form-element__label" for="requestBody"
+                >Request Body (JSON)</label
+              >
+              <div class="slds-form-element__control">
+                <textarea
+                  id="requestBody"
+                  class="slds-textarea"
+                  placeholder="Enter JSON request body here"
+                  value={requestBody}
+                  onchange={handleBodyChange}
+                  rows="8"
+                ></textarea>
+              </div>
+            </div>
+          </template>
+
+          <!-- Submit Button -->
+          <div class="slds-form-element">
+            <div class="slds-form-element__control">
+              <button
+                class="slds-button slds-button_brand"
+                onclick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                <lightning-icon
+                  icon-name="utility:send"
+                  size="x-small"
+                  class="slds-m-right_x-small"
+                ></lightning-icon>
+                <span lwc:if={isSubmitting}>Sending...</span>
+                <span lwc:else>Send Request</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Response Panel -->
+      <div class="slds-card">
+        <div class="slds-card__header">
+          <h2 class="slds-card__header-title">
+            <span class="slds-text-heading_small">Response</span>
+          </h2>
+        </div>
+        <div class="slds-card__body slds-card__body_inner">
+          <template lwc:if={isLoading}>
+            <div class="slds-is-relative slds-p-around_large">
+              <div
+                role="status"
+                class="slds-spinner slds-spinner_medium slds-spinner_brand"
+              >
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+              </div>
+            </div>
+          </template>
+
+          <template lwc:if={error}>
+            <div
+              class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error"
+              role="alert"
+            >
+              <span class="slds-assistive-text">error</span>
+              <lightning-icon
+                icon-name="utility:error"
+                size="x-small"
+                class="slds-m-right_x-small"
+              ></lightning-icon>
+              <h2>{error}</h2>
+            </div>
+          </template>
+
+          <template lwc:if={response}>
+            <!-- Response Status -->
+            <div class="slds-m-bottom_medium">
+              <div class="slds-badge slds-theme_{responseStatusClass}">
+                <span class="slds-badge__label">{responseStatus}</span>
+              </div>
+            </div>
+
+            <!-- Response Headers -->
+            <template lwc:if={responseHeaders}>
+              <div class="slds-m-bottom_medium">
+                <h3 class="slds-text-heading_small slds-m-bottom_x-small">
+                  Response Headers
+                </h3>
+                <div class="slds-box slds-box_xx-small">
+                  <pre class="slds-text-body_small">{responseHeaders}</pre>
+                </div>
+              </div>
+            </template>
+
+            <!-- Response Body -->
+            <div>
+              <h3 class="slds-text-heading_small slds-m-bottom_x-small">
+                Response Body
+              </h3>
+              <div class="slds-box slds-box_xx-small">
+                <pre class="slds-text-body_small">{responseBody}</pre>
+              </div>
+            </div>
+          </template>
+
+          <div class="slds-text-align_center slds-p-vertical_large">
+            <lightning-icon
+              icon-name="utility:api"
+              size="large"
+              class="slds-m-bottom_medium"
+            ></lightning-icon>
+            <p class="slds-text-body_regular slds-text-color_weak">
+              Enter an endpoint and click "Send Request" to test the API
+            </p>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</template>
