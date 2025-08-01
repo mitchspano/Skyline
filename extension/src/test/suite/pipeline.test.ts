@@ -91,7 +91,9 @@ describe("Pipeline Component Tests", () => {
       };
 
       mockExecuteCommand.mockResolvedValue(searchResult);
-      mockMarkedParse.mockResolvedValue("<h2>Summary</h2>\n<p>This is a <strong>test</strong> PR</p>");
+      mockMarkedParse.mockResolvedValue(
+        "<h2>Summary</h2>\n<p>This is a <strong>test</strong> PR</p>"
+      );
 
       await (pipeline as any).executeSearch();
 
@@ -365,7 +367,9 @@ describe("Pipeline Component Tests", () => {
       };
 
       mockExecuteCommand.mockResolvedValue(searchResult);
-      mockMarkedParse.mockResolvedValue("<h2>Summary</h2>\n<p>This is a <strong>test</strong> PR with <em>markdown</em></p>");
+      mockMarkedParse.mockResolvedValue(
+        "<h2>Summary</h2>\n<p>This is a <strong>test</strong> PR with <em>markdown</em></p>"
+      );
 
       // Act
       await (pipeline as any).executeSearch();
@@ -415,8 +419,6 @@ describe("Pipeline Component Tests", () => {
       expect(pipeline.isLoading).toBe(false);
     });
   });
-
-
 
   describe("sortPullRequests", () => {
     it("should sort pull requests with OPEN state first", () => {
@@ -485,8 +487,6 @@ describe("Pipeline Component Tests", () => {
       expect(result[1].number).toBe(1); // Older second
     });
   });
-
-
 
   describe("groupPullRequestsByBranch", () => {
     it("should group pull requests by branch name", () => {

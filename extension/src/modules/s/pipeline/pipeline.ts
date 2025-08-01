@@ -94,11 +94,14 @@ export default class Pipeline extends CliElement {
     // Use setTimeout to ensure DOM is updated after accordion toggle
     setTimeout(() => {
       if (this.template) {
-        const markdownContainers = this.template.querySelectorAll('.markdown-content');
+        const markdownContainers =
+          this.template.querySelectorAll(".markdown-content");
         markdownContainers.forEach((container) => {
-          const prNumber = container.getAttribute('data-pr-number');
+          const prNumber = container.getAttribute("data-pr-number");
           if (prNumber) {
-            const pr = this.pullRequests.find(p => p.number.toString() === prNumber);
+            const pr = this.pullRequests.find(
+              (p) => p.number.toString() === prNumber
+            );
             if (pr && pr.renderedBody) {
               container.innerHTML = pr.renderedBody;
             }
@@ -165,47 +168,47 @@ export default class Pipeline extends CliElement {
   private sanitizeHtml(html: string): string {
     // Basic HTML sanitization - only allow safe tags
     const allowedTags = {
-      'p': true,
-      'br': true,
-      'strong': true,
-      'b': true,
-      'em': true,
-      'i': true,
-      'u': true,
-      'h1': true,
-      'h2': true,
-      'h3': true,
-      'h4': true,
-      'h5': true,
-      'h6': true,
-      'ul': true,
-      'ol': true,
-      'li': true,
-      'blockquote': true,
-      'code': true,
-      'pre': true,
-      'a': true,
-      'table': true,
-      'thead': true,
-      'tbody': true,
-      'tr': true,
-      'th': true,
-      'td': true,
-      'hr': true
+      p: true,
+      br: true,
+      strong: true,
+      b: true,
+      em: true,
+      i: true,
+      u: true,
+      h1: true,
+      h2: true,
+      h3: true,
+      h4: true,
+      h5: true,
+      h6: true,
+      ul: true,
+      ol: true,
+      li: true,
+      blockquote: true,
+      code: true,
+      pre: true,
+      a: true,
+      table: true,
+      thead: true,
+      tbody: true,
+      tr: true,
+      th: true,
+      td: true,
+      hr: true
     };
 
     // Simple regex-based sanitization
     return html
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
-      .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
-      .replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, '')
-      .replace(/<input\b[^>]*>/gi, '')
-      .replace(/<button\b[^<]*(?:(?!<\/button>)<[^<]*)*<\/button>/gi, '')
-      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // Remove event handlers
-      .replace(/javascript:/gi, '') // Remove javascript: protocol
-      .replace(/data:/gi, ''); // Remove data: protocol
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
+      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "")
+      .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, "")
+      .replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, "")
+      .replace(/<input\b[^>]*>/gi, "")
+      .replace(/<button\b[^<]*(?:(?!<\/button>)<[^<]*)*<\/button>/gi, "")
+      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, "") // Remove event handlers
+      .replace(/javascript:/gi, "") // Remove javascript: protocol
+      .replace(/data:/gi, ""); // Remove data: protocol
   }
 
   private async renderMarkdown(markdown: string): Promise<string> {
@@ -298,7 +301,7 @@ export default class Pipeline extends CliElement {
           const sortedPullRequests = this.sortPullRequests(pullRequests);
           // Map pull requests asynchronously
           const mappedPullRequests = await Promise.all(
-            sortedPullRequests.map(pr => this.mapPullRequest(pr))
+            sortedPullRequests.map((pr) => this.mapPullRequest(pr))
           );
           this.pullRequests = mappedPullRequests;
           // Render markdown content after the DOM is updated
