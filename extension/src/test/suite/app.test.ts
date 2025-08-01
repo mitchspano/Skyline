@@ -419,7 +419,7 @@ describe("App Component Tests", () => {
   describe("sendMessage Method", () => {
     it("should send message to VSCode without expecting response", () => {
       const message = { openSettings: true };
-      
+
       App.sendMessage(message);
 
       expect(mockVscode.postMessage).toHaveBeenCalledWith(message);
@@ -428,14 +428,17 @@ describe("App Component Tests", () => {
     it("should log message in debug mode", () => {
       // Enable debug mode
       mockWindow.vsCodeConfig.debugMode = true;
-      
+
       const message = { openSettings: true };
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
+      const consoleSpy = jest.spyOn(console, "log").mockImplementation();
+
       App.sendMessage(message);
 
-      expect(consoleSpy).toHaveBeenCalledWith('[DEBUG] Sending message:', message);
-      
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[DEBUG] Sending message:",
+        message
+      );
+
       consoleSpy.mockRestore();
       mockWindow.vsCodeConfig.debugMode = false;
     });
@@ -443,25 +446,28 @@ describe("App Component Tests", () => {
     it("should not log message when debug mode is disabled", () => {
       // Ensure debug mode is disabled
       mockWindow.vsCodeConfig.debugMode = false;
-      
+
       const message = { openSettings: true };
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
+      const consoleSpy = jest.spyOn(console, "log").mockImplementation();
+
       App.sendMessage(message);
 
-      expect(consoleSpy).not.toHaveBeenCalledWith('[DEBUG] Sending message:', expect.anything());
-      
+      expect(consoleSpy).not.toHaveBeenCalledWith(
+        "[DEBUG] Sending message:",
+        expect.anything()
+      );
+
       consoleSpy.mockRestore();
     });
 
     it("should handle different message types", () => {
       const messages = [
         { openSettings: true },
-        { command: 'test', data: 'value' },
-        { type: 'notification', message: 'test' }
+        { command: "test", data: "value" },
+        { type: "notification", message: "test" }
       ];
 
-      messages.forEach(message => {
+      messages.forEach((message) => {
         App.sendMessage(message);
         expect(mockVscode.postMessage).toHaveBeenCalledWith(message);
       });

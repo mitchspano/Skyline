@@ -32,7 +32,7 @@ describe("Header Tests", () => {
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Create a new instance of Header for each test
     header = new Header();
   });
@@ -390,7 +390,7 @@ describe("Header Tests", () => {
   describe("handleSettingsClick", () => {
     it("should have handleSettingsClick method", () => {
       // Assert
-      expect(typeof header.handleSettingsClick).toBe('function');
+      expect(typeof header.handleSettingsClick).toBe("function");
     });
 
     it("should call App.sendMessage with openSettings message", () => {

@@ -48,9 +48,17 @@ export function activate(context: vscode.ExtensionContext) {
         (message) => {
           if (message.openSettings) {
             // Open VSCode settings for the Skyline extension
-            vscode.commands.executeCommand('workbench.action.openSettings', '@ext:mitchspano.skyline-devops');
+            vscode.commands.executeCommand(
+              "workbench.action.openSettings",
+              "@ext:mitchspano.skyline-devops"
+            );
           } else {
-            execute(panel, message.command, message.elementId, message.requestId);
+            execute(
+              panel,
+              message.command,
+              message.elementId,
+              message.requestId
+            );
           }
         },
         undefined,

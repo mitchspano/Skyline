@@ -67,7 +67,9 @@ describe("Extension Tests", () => {
     (vscode.commands.registerCommand as jest.Mock).mockReturnValue({
       dispose: jest.fn()
     });
-    (vscode.commands.executeCommand as jest.Mock) = jest.fn().mockResolvedValue(undefined);
+    (vscode.commands.executeCommand as jest.Mock) = jest
+      .fn()
+      .mockResolvedValue(undefined);
     (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
       debugMode: false
     });
@@ -346,8 +348,8 @@ describe("Extension Tests", () => {
       messageCallback(testMessage);
 
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
-        'workbench.action.openSettings',
-        '@ext:mitchspano.skyline-devops'
+        "workbench.action.openSettings",
+        "@ext:mitchspano.skyline-devops"
       );
     });
 
@@ -369,7 +371,7 @@ describe("Extension Tests", () => {
       messageCallback(testMessage);
 
       expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith(
-        'workbench.action.openSettings',
+        "workbench.action.openSettings",
         expect.any(String)
       );
     });
