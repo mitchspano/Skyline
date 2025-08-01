@@ -4,7 +4,7 @@
   "description": "A Salesforce DevOps Tool",
   "icon": "images/Skyline_logo.png",
   "publisher": "mitchspano",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "repository": {
     "type": "git",
     "url": "https://github.com/mitchspano/skyline"
