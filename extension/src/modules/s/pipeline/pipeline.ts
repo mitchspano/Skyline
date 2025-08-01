@@ -19,6 +19,7 @@ import type { SkylineConfig } from "../../../types/config";
 import CliElement from "../cliElement/cliElement";
 import { ExecuteResult } from "../app/app";
 import Toast from "lightning-base-components/src/lightning/toast/toast.js";
+import { marked } from "marked";
 
 const CONFIGURATION_FILE_NAME = "skyline.config.json";
 const OPEN_PR_STATE = "OPEN";
@@ -41,6 +42,7 @@ interface PullRequest {
   number: number;
   title: string;
   body: string;
+  renderedBody?: string;
   baseRefName: string;
   url: string;
   files: PullRequestFile[];
@@ -85,6 +87,25 @@ export default class Pipeline extends CliElement {
 
   handleSectionToggle(event: CustomEvent) {
     this.activeSections = event.detail.openSections;
+    this.renderMarkdownContent();
+  }
+
+  private renderMarkdownContent() {
+    // Use setTimeout to ensure DOM is updated after accordion toggle
+    setTimeout(() => {
+      if (this.template) {
+        const markdownContainers = this.template.querySelectorAll('.markdown-content');
+        markdownContainers.forEach((container) => {
+          const prNumber = container.getAttribute('data-pr-number');
+          if (prNumber) {
+            const pr = this.pullRequests.find(p => p.number.toString() === prNumber);
+            if (pr && pr.renderedBody) {
+              container.innerHTML = pr.renderedBody;
+            }
+          }
+        });
+      }
+    }, 0);
   }
 
   private async loadConfiguration(): Promise<void> {
@@ -119,7 +140,7 @@ export default class Pipeline extends CliElement {
       const result = await this.executeCommand(
         COMMANDS.searchPullRequests(this.searchTerm)
       );
-      this.handleSearchResults(result);
+      await this.handleSearchResults(result);
     } catch (error) {
       this.handleError("Failed to search pull requests", "Search Error");
     } finally {
@@ -141,11 +162,75 @@ export default class Pipeline extends CliElement {
     });
   }
 
-  private mapPullRequest(pr: PullRequest): PullRequest {
+  private sanitizeHtml(html: string): string {
+    // Basic HTML sanitization - only allow safe tags
+    const allowedTags = {
+      'p': true,
+      'br': true,
+      'strong': true,
+      'b': true,
+      'em': true,
+      'i': true,
+      'u': true,
+      'h1': true,
+      'h2': true,
+      'h3': true,
+      'h4': true,
+      'h5': true,
+      'h6': true,
+      'ul': true,
+      'ol': true,
+      'li': true,
+      'blockquote': true,
+      'code': true,
+      'pre': true,
+      'a': true,
+      'table': true,
+      'thead': true,
+      'tbody': true,
+      'tr': true,
+      'th': true,
+      'td': true,
+      'hr': true
+    };
+
+    // Simple regex-based sanitization
+    return html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+      .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+      .replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, '')
+      .replace(/<input\b[^>]*>/gi, '')
+      .replace(/<button\b[^<]*(?:(?!<\/button>)<[^<]*)*<\/button>/gi, '')
+      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // Remove event handlers
+      .replace(/javascript:/gi, '') // Remove javascript: protocol
+      .replace(/data:/gi, ''); // Remove data: protocol
+  }
+
+  private async renderMarkdown(markdown: string): Promise<string> {
+    if (!markdown) {
+      return Promise.resolve("");
+    }
+    try {
+      // Configure marked for safe HTML rendering
+      const html = await marked.parse(markdown, {
+        breaks: true, // Convert line breaks to <br>
+        gfm: true // GitHub Flavored Markdown
+      });
+      return this.sanitizeHtml(html);
+    } catch (error) {
+      // If markdown rendering fails, return the original text
+      return markdown;
+    }
+  }
+
+  private async mapPullRequest(pr: PullRequest): Promise<PullRequest> {
     return {
       ...pr,
       bodySectionName: `${pr.number}_body`,
       filesSectionName: `${pr.number}_files`,
+      renderedBody: await this.renderMarkdown(pr.body),
       stateBadgeClass:
         pr.state === OPEN_PR_STATE
           ? "slds-badge slds-theme_success"
@@ -201,7 +286,7 @@ export default class Pipeline extends CliElement {
     };
   }
 
-  private handleSearchResults(result: ExecuteResult) {
+  private async handleSearchResults(result: ExecuteResult) {
     if (result.stdout) {
       try {
         const pullRequests = JSON.parse(result.stdout);
@@ -210,9 +295,16 @@ export default class Pipeline extends CliElement {
           this.pullRequests = [];
         } else {
           this.searchMessage = "";
-          this.pullRequests = this.sortPullRequests(pullRequests).map(
-            this.mapPullRequest.bind(this)
+          const sortedPullRequests = this.sortPullRequests(pullRequests);
+          // Map pull requests asynchronously
+          const mappedPullRequests = await Promise.all(
+            sortedPullRequests.map(pr => this.mapPullRequest(pr))
           );
+          this.pullRequests = mappedPullRequests;
+          // Render markdown content after the DOM is updated
+          setTimeout(() => {
+            this.renderMarkdownContent();
+          }, 0);
         }
       } catch (error) {
         const errorMessage =

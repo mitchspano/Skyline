@@ -1,0 +1,144 @@
+/*
+ Copyright 2025 Mitch Spano
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
+.markdown-content {
+  line-height: 1.6;
+  color: var(--lwc-colorTextDefault);
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown-content h1 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--lwc-colorBorder);
+  padding-bottom: 0.25rem;
+}
+
+.markdown-content h2 {
+  font-size: 1.25rem;
+  border-bottom: 1px solid var(--lwc-colorBorder);
+  padding-bottom: 0.25rem;
+}
+
+.markdown-content h3 {
+  font-size: 1.125rem;
+}
+
+.markdown-content h4 {
+  font-size: 1rem;
+}
+
+.markdown-content h5 {
+  font-size: 0.875rem;
+}
+
+.markdown-content h6 {
+  font-size: 0.75rem;
+}
+
+.markdown-content p {
+  margin-bottom: 1rem;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin-bottom: 1rem;
+  padding-left: 2rem;
+}
+
+.markdown-content li {
+  margin-bottom: 0.25rem;
+}
+
+.markdown-content blockquote {
+  margin: 1rem 0;
+  padding: 0.5rem 1rem;
+  border-left: 4px solid var(--lwc-colorBorder);
+  background-color: var(--lwc-colorBackgroundShade);
+  font-style: italic;
+}
+
+.markdown-content code {
+  background-color: var(--lwc-colorBackgroundShade);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+}
+
+.markdown-content pre {
+  background-color: var(--lwc-colorBackgroundShade);
+  padding: 1rem;
+  border-radius: 0.25rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.markdown-content strong {
+  font-weight: 600;
+}
+
+.markdown-content em {
+  font-style: italic;
+}
+
+.markdown-content a {
+  color: var(--lwc-colorTextLink);
+  text-decoration: none;
+}
+
+.markdown-content a:hover {
+  text-decoration: underline;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid var(--lwc-colorBorder);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.markdown-content th {
+  background-color: var(--lwc-colorBackgroundShade);
+  font-weight: 600;
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--lwc-colorBorder);
+  margin: 1rem 0;
+} 

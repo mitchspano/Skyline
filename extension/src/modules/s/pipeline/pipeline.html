@@ -156,10 +156,10 @@
                                   label="Description"
                                 >
                                   <div
-                                    class="slds-text-body_regular slds-p-around_x-small"
-                                  >
-                                    {pr.body}
-                                  </div>
+                                    class="slds-text-body_regular slds-p-around_x-small markdown-content"
+                                    lwc:dom="manual"
+                                    data-pr-number={pr.number}
+                                  ></div>
                                 </lightning-accordion-section>
                                 <lightning-accordion-section
                                   name={pr.filesSectionName}
