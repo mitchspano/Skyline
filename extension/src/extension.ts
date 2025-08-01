@@ -36,7 +36,8 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.ViewColumn.One, // Editor column to show the new webview panel in.
         {
           enableScripts: true,
-          retainContextWhenHidden: true
+          retainContextWhenHidden: true,
+          localResourceRoots: [context.extensionUri]
         }
       );
       panel.webview.html = getWebviewContent(
@@ -45,7 +46,12 @@ export function activate(context: vscode.ExtensionContext) {
       );
       panel.webview.onDidReceiveMessage(
         (message) => {
-          execute(panel, message.command, message.elementId, message.requestId);
+          if (message.openSettings) {
+            // Open VSCode settings for the Skyline extension
+            vscode.commands.executeCommand('workbench.action.openSettings', '@ext:mitchspano.skyline-devops');
+          } else {
+            execute(panel, message.command, message.elementId, message.requestId);
+          }
         },
         undefined,
         context.subscriptions

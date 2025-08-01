@@ -67,6 +67,7 @@ describe("Extension Tests", () => {
     (vscode.commands.registerCommand as jest.Mock).mockReturnValue({
       dispose: jest.fn()
     });
+    (vscode.commands.executeCommand as jest.Mock) = jest.fn().mockResolvedValue(undefined);
     (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
       debugMode: false
     });
@@ -107,7 +108,8 @@ describe("Extension Tests", () => {
         vscode.ViewColumn.One,
         {
           enableScripts: true,
-          retainContextWhenHidden: true
+          retainContextWhenHidden: true,
+          localResourceRoots: [mockContext.extensionUri]
         }
       );
     });
@@ -323,6 +325,53 @@ describe("Extension Tests", () => {
 
       const html = mockPanel.webview.html;
       expect(html).toContain("debugMode");
+    });
+  });
+
+  describe("Settings Functionality", () => {
+    it("should handle openSettings message and execute command", () => {
+      activate(mockContext);
+
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
+      commandCallback();
+
+      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock)
+        .mock.calls[0][0];
+
+      const testMessage = {
+        openSettings: true
+      };
+
+      messageCallback(testMessage);
+
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'workbench.action.openSettings',
+        '@ext:mitchspano.skyline-devops'
+      );
+    });
+
+    it("should not execute command for non-settings messages", () => {
+      activate(mockContext);
+
+      const commandCallback = (vscode.commands.registerCommand as jest.Mock)
+        .mock.calls[0][1];
+      commandCallback();
+
+      const messageCallback = (mockWebview.onDidReceiveMessage as jest.Mock)
+        .mock.calls[0][0];
+
+      const testMessage = {
+        command: "test-command",
+        elementId: "test-element"
+      };
+
+      messageCallback(testMessage);
+
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith(
+        'workbench.action.openSettings',
+        expect.any(String)
+      );
     });
   });
 

@@ -23,7 +23,6 @@
  */
 
 import { LightningElement, track } from "lwc";
-import CLIElement from "../cliElement/cliElement";
 import { v4 as uuidv4 } from "uuid";
 
 declare global {
@@ -127,6 +126,18 @@ export default class App extends LightningElement {
         );
       }
     });
+  }
+
+  /**
+   * Sends a message to the VS Code extension without expecting a response.
+   * @param message The message to send.
+   */
+  static sendMessage(message: any): void {
+    App.vscode.postMessage(message);
+
+    if (App.isDebugMode()) {
+      console.log(`[DEBUG] Sending message:`, message);
+    }
   }
 
   /**

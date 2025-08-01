@@ -15,16 +15,12 @@
  */
 
 import App, { Pages, ExecuteResult } from "../../modules/s/app/app";
+import { mockVscode } from "../../test/mocks/app";
 
 // Mock uuid
 jest.mock("uuid", () => ({
   v4: jest.fn(() => "test-uuid-123")
 }));
-
-// Mock acquireVsCodeApi
-const mockVscode = {
-  postMessage: jest.fn()
-};
 
 // Mock window object
 const mockWindow = {
@@ -417,6 +413,60 @@ describe("App Component Tests", () => {
     it("should return false for showOrgManager when currentPage is not orgManager", () => {
       app.currentPage = Pages.home;
       expect(app.showOrgManager).toBe(false);
+    });
+  });
+
+  describe("sendMessage Method", () => {
+    it("should send message to VSCode without expecting response", () => {
+      const message = { openSettings: true };
+      
+      App.sendMessage(message);
+
+      expect(mockVscode.postMessage).toHaveBeenCalledWith(message);
+    });
+
+    it("should log message in debug mode", () => {
+      // Enable debug mode
+      mockWindow.vsCodeConfig.debugMode = true;
+      
+      const message = { openSettings: true };
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      App.sendMessage(message);
+
+      expect(consoleSpy).toHaveBeenCalledWith('[DEBUG] Sending message:', message);
+      
+      consoleSpy.mockRestore();
+      mockWindow.vsCodeConfig.debugMode = false;
+    });
+
+    it("should not log message when debug mode is disabled", () => {
+      // Ensure debug mode is disabled
+      mockWindow.vsCodeConfig.debugMode = false;
+      
+      const message = { openSettings: true };
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      App.sendMessage(message);
+
+      expect(consoleSpy).not.toHaveBeenCalledWith('[DEBUG] Sending message:', expect.anything());
+      
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle different message types", () => {
+      const messages = [
+        { openSettings: true },
+        { command: 'test', data: 'value' },
+        { type: 'notification', message: 'test' }
+      ];
+
+      messages.forEach(message => {
+        App.sendMessage(message);
+        expect(mockVscode.postMessage).toHaveBeenCalledWith(message);
+      });
+
+      expect(mockVscode.postMessage).toHaveBeenCalledTimes(messages.length);
     });
   });
 

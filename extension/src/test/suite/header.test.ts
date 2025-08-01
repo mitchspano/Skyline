@@ -17,10 +17,22 @@
 import Header from "../../modules/s/header/header";
 import { Pages } from "../../modules/s/app/app";
 
+// Mock the App module
+jest.mock("../../modules/s/app/app", () => ({
+  ...jest.requireActual("../../modules/s/app/app"),
+  default: {
+    ...jest.requireActual("../../modules/s/app/app").default,
+    sendMessage: jest.fn()
+  }
+}));
+
 describe("Header Tests", () => {
   let header: Header;
 
   beforeEach(() => {
+    // Reset mocks
+    jest.clearAllMocks();
+    
     // Create a new instance of Header for each test
     header = new Header();
   });
@@ -372,6 +384,84 @@ describe("Header Tests", () => {
 
       // Verify total calls
       expect(dispatchEventSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("handleSettingsClick", () => {
+    it("should have handleSettingsClick method", () => {
+      // Assert
+      expect(typeof header.handleSettingsClick).toBe('function');
+    });
+
+    it("should call App.sendMessage with openSettings message", () => {
+      // Arrange
+      const mockEvent = {
+        preventDefault: jest.fn()
+      } as unknown as Event;
+
+      // Get the mocked App
+      const App = require("../../modules/s/app/app").default;
+
+      // Act
+      header.handleSettingsClick(mockEvent);
+
+      // Assert
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(App.sendMessage).toHaveBeenCalledWith({
+        openSettings: true
+      });
+    });
+
+    it("should prevent default link behavior", () => {
+      // Arrange
+      const mockEvent = {
+        preventDefault: jest.fn()
+      } as unknown as Event;
+
+      // Act
+      header.handleSettingsClick(mockEvent);
+
+      // Assert
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+    });
+
+    it("should send correct message format", () => {
+      // Arrange
+      const mockEvent = {
+        preventDefault: jest.fn()
+      } as unknown as Event;
+
+      // Get the mocked App
+      const App = require("../../modules/s/app/app").default;
+
+      // Act
+      header.handleSettingsClick(mockEvent);
+
+      // Assert
+      expect(App.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          openSettings: true
+        })
+      );
+    });
+
+    it("should handle multiple settings clicks", () => {
+      // Arrange
+      const mockEvent = {
+        preventDefault: jest.fn()
+      } as unknown as Event;
+
+      // Get the mocked App
+      const App = require("../../modules/s/app/app").default;
+
+      // Act
+      header.handleSettingsClick(mockEvent);
+      header.handleSettingsClick(mockEvent);
+      header.handleSettingsClick(mockEvent);
+
+      // Assert
+      expect(App.sendMessage).toHaveBeenCalledTimes(3);
+      expect(mockEvent.preventDefault).toHaveBeenCalledTimes(3);
     });
   });
 

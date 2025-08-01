@@ -50,4 +50,16 @@ export default class Header extends LightningElement {
   handleNavigationClick() {
     this.showNavigation = !this.showNavigation;
   }
+
+  /**
+   * Handles clicks on the settings link.
+   * Opens the VSCode settings page for the Skyline extension.
+   */
+  handleSettingsClick(event: Event) {
+    event.preventDefault();
+    const App = require("./app").default;
+    App.sendMessage({
+      openSettings: true
+    });
+  }
 }

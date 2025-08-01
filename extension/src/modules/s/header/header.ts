@@ -21,6 +21,7 @@
  */
 import { LightningElement, api } from "lwc";
 import { Pages } from "../app/app";
+import App from "../app/app";
 
 export default class Header extends LightningElement {
   showNavigation = false;
@@ -49,5 +50,15 @@ export default class Header extends LightningElement {
    */
   handleNavigationClick() {
     this.showNavigation = !this.showNavigation;
+  }
+
+  /**
+   * Handles clicks on the settings link.
+   * Opens the VSCode settings page for the Skyline extension.
+   */
+  handleSettingsClick(event: Event) {
+    App.sendMessage({
+      openSettings: true
+    });
   }
 }

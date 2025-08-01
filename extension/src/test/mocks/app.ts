@@ -32,6 +32,9 @@ const mockVscode = {
 // Mock acquireVsCodeApi globally
 (global as any).acquireVsCodeApi = jest.fn(() => mockVscode);
 
+// Export mockVscode for tests to access
+export { mockVscode };
+
 /**
  * Enum representing the different pages within the application.
  */
@@ -131,6 +134,18 @@ export default class App extends LightningElement {
     return new Promise<ExecuteResult>((resolve) => {
       App.pendingResolvers.set(requestId, resolve);
     });
+  }
+
+  /**
+   * Sends a message to the VS Code extension without expecting a response.
+   * @param message The message to send.
+   */
+  static sendMessage(message: any): void {
+    App.vscode.postMessage(message);
+
+    if (App.isDebugMode()) {
+      console.log(`[DEBUG] Sending message:`, message);
+    }
   }
 
   /**
