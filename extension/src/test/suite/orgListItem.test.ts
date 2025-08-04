@@ -82,6 +82,345 @@ describe("OrgListItem Component Tests", () => {
     });
   });
 
+  describe("New API Properties", () => {
+    it("should accept isDefaultOrg property", () => {
+      // Arrange
+      orgListItem.isDefaultOrg = true;
+
+      // Act & Assert
+      expect(orgListItem.isDefaultOrg).toBe(true);
+    });
+
+    it("should accept isDefaultDevHub property", () => {
+      // Arrange
+      orgListItem.isDefaultDevHub = true;
+
+      // Act & Assert
+      expect(orgListItem.isDefaultDevHub).toBe(true);
+    });
+
+    it("should accept devHubInfo property", () => {
+      // Arrange
+      const devHubInfo: OrgInfo = {
+        orgId: "devhub-id",
+        alias: "devhub-org",
+        username: "devhub@example.com",
+        isDevHub: true
+      } as OrgInfo;
+
+      orgListItem.devHubInfo = devHubInfo;
+
+      // Act & Assert
+      expect(orgListItem.devHubInfo).toBe(devHubInfo);
+    });
+
+    it("should have default values for new properties", () => {
+      // Act & Assert
+      expect(orgListItem.isDefaultOrg).toBe(false);
+      expect(orgListItem.isDefaultDevHub).toBe(false);
+      expect(orgListItem.devHubInfo).toBeUndefined();
+    });
+  });
+
+  describe("Computed Properties", () => {
+    describe("devHubDisplayName", () => {
+      it("should return devHubInfo alias when available", () => {
+        // Arrange
+        const devHubInfo: OrgInfo = {
+          orgId: "devhub-id",
+          alias: "devhub-alias",
+          username: "devhub@example.com"
+        } as OrgInfo;
+
+        orgListItem.devHubInfo = devHubInfo;
+
+        // Act & Assert
+        expect(orgListItem.devHubDisplayName).toBe("devhub-alias");
+      });
+
+      it("should return devHubInfo username when alias is not available", () => {
+        // Arrange
+        const devHubInfo: OrgInfo = {
+          orgId: "devhub-id",
+          username: "devhub@example.com"
+        } as OrgInfo;
+
+        orgListItem.devHubInfo = devHubInfo;
+
+        // Act & Assert
+        expect(orgListItem.devHubDisplayName).toBe("devhub@example.com");
+      });
+
+      it("should return org devHubUsername when devHubInfo is not available", () => {
+        // Arrange
+        mockOrg.devHubUsername = "org-devhub@example.com";
+        orgListItem.org = mockOrg;
+
+        // Act & Assert
+        expect(orgListItem.devHubDisplayName).toBe("org-devhub@example.com");
+      });
+
+      it("should return 'Unknown Dev Hub' when no dev hub info is available", () => {
+        // Arrange
+        mockOrg.devHubUsername = undefined;
+        orgListItem.org = mockOrg;
+        orgListItem.devHubInfo = undefined;
+
+        // Act & Assert
+        expect(orgListItem.devHubDisplayName).toBe("Unknown Dev Hub");
+      });
+    });
+
+    describe("hasIndicators", () => {
+      it("should return true when isDefaultOrg is true", () => {
+        // Arrange
+        orgListItem.isDefaultOrg = true;
+        orgListItem.isDefaultDevHub = false;
+
+        // Act & Assert
+        expect(orgListItem.hasIndicators).toBe(true);
+      });
+
+      it("should return true when isDefaultDevHub is true", () => {
+        // Arrange
+        orgListItem.isDefaultOrg = false;
+        orgListItem.isDefaultDevHub = true;
+
+        // Act & Assert
+        expect(orgListItem.hasIndicators).toBe(true);
+      });
+
+      it("should return true when both indicators are true", () => {
+        // Arrange
+        orgListItem.isDefaultOrg = true;
+        orgListItem.isDefaultDevHub = true;
+
+        // Act & Assert
+        expect(orgListItem.hasIndicators).toBe(true);
+      });
+
+      it("should return false when no indicators are true", () => {
+        // Arrange
+        orgListItem.isDefaultOrg = false;
+        orgListItem.isDefaultDevHub = false;
+
+        // Act & Assert
+        expect(orgListItem.hasIndicators).toBe(false);
+      });
+    });
+
+    describe("isDevHub", () => {
+      it("should return true when org isDevHub is true", () => {
+        // Arrange
+        mockOrg.isDevHub = true;
+        orgListItem.org = mockOrg;
+
+        // Act & Assert
+        expect(orgListItem.isDevHub).toBe(true);
+      });
+
+      it("should return false when org isDevHub is false", () => {
+        // Arrange
+        mockOrg.isDevHub = false;
+        orgListItem.org = mockOrg;
+
+        // Act & Assert
+        expect(orgListItem.isDevHub).toBe(false);
+      });
+
+      it("should return false when org isDevHub is undefined", () => {
+        // Arrange
+        (mockOrg as any).isDevHub = undefined;
+        orgListItem.org = mockOrg;
+
+        // Act & Assert
+        expect(orgListItem.isDevHub).toBe(false);
+      });
+    });
+
+    describe("orgItemClass", () => {
+      it("should return 'default-org' when isDefaultOrg is true", () => {
+        // Arrange
+        orgListItem.isDefaultOrg = true;
+        orgListItem.isDefaultDevHub = false;
+
+        // Act & Assert
+        expect(orgListItem.orgItemClass).toBe("default-org");
+      });
+
+      it("should return 'default-dev-hub' when isDefaultDevHub is true", () => {
+        // Arrange
+        orgListItem.isDefaultOrg = false;
+        orgListItem.isDefaultDevHub = true;
+
+        // Act & Assert
+        expect(orgListItem.orgItemClass).toBe("default-dev-hub");
+      });
+
+      it("should return 'default-org default-dev-hub' when both are true", () => {
+        // Arrange
+        orgListItem.isDefaultOrg = true;
+        orgListItem.isDefaultDevHub = true;
+
+        // Act & Assert
+        expect(orgListItem.orgItemClass).toBe("default-org default-dev-hub");
+      });
+
+      it("should return empty string when no indicators are true", () => {
+        // Arrange
+        orgListItem.isDefaultOrg = false;
+        orgListItem.isDefaultDevHub = false;
+
+        // Act & Assert
+        expect(orgListItem.orgItemClass).toBe("");
+      });
+    });
+  });
+
+  describe("New Event Handlers", () => {
+    describe("handleSetDefaultOrg", () => {
+      it("should dispatch setdefaultorg event with org alias", () => {
+        // Arrange
+        const dispatchEventSpy = jest.spyOn(orgListItem, "dispatchEvent");
+        const expectedEvent = new CustomEvent("setdefaultorg", {
+          detail: "test-org",
+          bubbles: true,
+          composed: true
+        });
+
+        // Act
+        orgListItem.handleSetDefaultOrg({} as CustomEvent);
+
+        // Assert
+        expect(dispatchEventSpy).toHaveBeenCalledWith(expectedEvent);
+      });
+    });
+
+    describe("handleSetDefaultDevHub", () => {
+      it("should dispatch setdefaultdevhub event with org alias", () => {
+        // Arrange
+        const dispatchEventSpy = jest.spyOn(orgListItem, "dispatchEvent");
+        const expectedEvent = new CustomEvent("setdefaultdevhub", {
+          detail: "test-org",
+          bubbles: true,
+          composed: true
+        });
+
+        // Act
+        orgListItem.handleSetDefaultDevHub({} as CustomEvent);
+
+        // Assert
+        expect(dispatchEventSpy).toHaveBeenCalledWith(expectedEvent);
+      });
+    });
+  });
+
+  describe("handleMenuSelect", () => {
+    let consoleWarnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    });
+
+    afterEach(() => {
+      consoleWarnSpy.mockRestore();
+    });
+
+    it("should call handleOpenOrg when 'open' is selected", () => {
+      // Arrange
+      const handleOpenOrgSpy = jest.spyOn(orgListItem, "handleOpenOrg");
+      const event = { detail: { value: "open" } } as CustomEvent;
+
+      // Act
+      orgListItem.handleMenuSelect(event);
+
+      // Assert
+      expect(handleOpenOrgSpy).toHaveBeenCalledWith(event);
+    });
+
+    it("should call handleSetDefaultOrg when 'set-default' is selected", () => {
+      // Arrange
+      const handleSetDefaultOrgSpy = jest.spyOn(orgListItem, "handleSetDefaultOrg");
+      const event = { detail: { value: "set-default" } } as CustomEvent;
+
+      // Act
+      orgListItem.handleMenuSelect(event);
+
+      // Assert
+      expect(handleSetDefaultOrgSpy).toHaveBeenCalledWith(event);
+    });
+
+    it("should call handleSetDefaultDevHub when 'set-dev-hub' is selected", () => {
+      // Arrange
+      const handleSetDefaultDevHubSpy = jest.spyOn(orgListItem, "handleSetDefaultDevHub");
+      const event = { detail: { value: "set-dev-hub" } } as CustomEvent;
+
+      // Act
+      orgListItem.handleMenuSelect(event);
+
+      // Assert
+      expect(handleSetDefaultDevHubSpy).toHaveBeenCalledWith(event);
+    });
+
+    it("should call handleRemoveOrg when 'remove' is selected", () => {
+      // Arrange
+      const handleRemoveOrgSpy = jest.spyOn(orgListItem, "handleRemoveOrg");
+      const event = { detail: { value: "remove" } } as CustomEvent;
+
+      // Act
+      orgListItem.handleMenuSelect(event);
+
+      // Assert
+      expect(handleRemoveOrgSpy).toHaveBeenCalledWith(event);
+    });
+
+    it("should log warning for unknown menu selection", () => {
+      // Arrange
+      const event = { detail: { value: "unknown-action" } } as CustomEvent;
+
+      // Act
+      orgListItem.handleMenuSelect(event);
+
+      // Assert
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Unknown menu selection:', 'unknown-action');
+    });
+
+    it("should handle empty value gracefully", () => {
+      // Arrange
+      const event = { detail: { value: "" } } as CustomEvent;
+
+      // Act
+      orgListItem.handleMenuSelect(event);
+
+      // Assert
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Unknown menu selection:', '');
+    });
+  });
+
+  describe("Menu Integration", () => {
+    it("should handle all menu actions correctly", () => {
+      // Arrange
+      const dispatchEventSpy = jest.spyOn(orgListItem, "dispatchEvent");
+      const menuActions = [
+        { value: "open", expectedEvent: "openorg" },
+        { value: "set-default", expectedEvent: "setdefaultorg" },
+        { value: "set-dev-hub", expectedEvent: "setdefaultdevhub" },
+        { value: "remove", expectedEvent: "removeorg" }
+      ];
+
+      // Act & Assert
+      menuActions.forEach(({ value, expectedEvent }) => {
+        const event = { detail: { value } } as CustomEvent;
+        orgListItem.handleMenuSelect(event);
+
+        const lastCall = dispatchEventSpy.mock.calls[dispatchEventSpy.mock.calls.length - 1][0] as CustomEvent;
+        expect(lastCall.type).toBe(expectedEvent);
+      });
+
+      expect(dispatchEventSpy).toHaveBeenCalledTimes(4);
+    });
+  });
+
   describe("handleRemoveOrg", () => {
     it("should dispatch removeorg event with org alias", () => {
       // Arrange

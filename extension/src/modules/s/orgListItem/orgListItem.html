@@ -15,33 +15,67 @@
 -->
 
 <template>
-  <li class="slds-item">
+  <li class="slds-item org-item" data-class={orgItemClass}>
     <div class="slds-grid slds-gutters">
       <div class="slds-col">
-        <div class="slds-text-heading_small">{org.alias}</div>
-        <div class="slds-text-body_small">{org.username}</div>
-        <template if:true={showExpiration}>
-          <div class="slds-text-body_small">Expires: {org.expirationDate}</div>
-        </template>
+        <div class="slds-grid">
+          <div class="slds-col">
+            <div class="org-alias-container">
+              <div class="slds-text-heading_small">{org.alias}</div>
+              <template if:true={isDefaultOrg}>
+                <span class="org-badge default-org">Default Org</span>
+              </template>
+              <template if:true={isDefaultDevHub}>
+                <span class="org-badge default-dev-hub">Default Dev Hub</span>
+              </template>
+            </div>
+            <div class="slds-text-body_small">{org.username}</div>
+            <template if:true={showExpiration}>
+              <div class="slds-text-body_small">
+                Expires: {org.expirationDate}
+              </div>
+            </template>
+            <template if:true={devHubInfo}>
+              <div class="dev-hub-info">Dev Hub: {devHubDisplayName}</div>
+            </template>
+          </div>
+        </div>
       </div>
       <div class="slds-col slds-no-flex">
-        <lightning-button
-          label="Open"
-          variant="brand"
-          onclick={handleOpenOrg}
-          data-alias={org.alias}
-          disabled={isLoading}
-          class="slds-m-right_small"
+        <lightning-button-menu
+          alternative-text="Actions"
+          icon-name="utility:down"
+          variant="border-filled"
+          menu-alignment="right"
+          onselect={handleMenuSelect}
         >
-        </lightning-button>
-        <lightning-button
-          label="Remove"
-          variant="destructive"
-          onclick={handleRemoveOrg}
-          data-alias={org.alias}
-          disabled={isLoading}
-        >
-        </lightning-button>
+          <lightning-menu-item
+            value="open"
+            label="Open"
+            icon-name="utility:open"
+          ></lightning-menu-item>
+          <template if:false={isDefaultOrg}>
+            <lightning-menu-item
+              value="set-default"
+              label="Set as Default"
+              icon-name="utility:check"
+            ></lightning-menu-item>
+          </template>
+          <template if:true={isDevHub}>
+            <template if:false={isDefaultDevHub}>
+              <lightning-menu-item
+                value="set-dev-hub"
+                label="Set as Dev Hub"
+                icon-name="utility:settings"
+              ></lightning-menu-item>
+            </template>
+          </template>
+          <lightning-menu-item
+            value="remove"
+            label="Remove"
+            icon-name="utility:delete"
+          ></lightning-menu-item>
+        </lightning-button-menu>
       </div>
     </div>
   </li>

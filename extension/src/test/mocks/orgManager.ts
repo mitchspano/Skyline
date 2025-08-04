@@ -66,6 +66,10 @@ export default class OrgManager extends CliElement {
   showScratchOrgModal = false;
   definitionFileOptions: string[] = [];
 
+  // New private properties
+  private _currentDefaultOrg: string | null = null;
+  private _currentDefaultDevHub: string | null = null;
+
   connectedCallback() {
     // Mock implementation
   }
@@ -83,6 +87,14 @@ export default class OrgManager extends CliElement {
   }
 
   async handleOpenOrg(event: CustomEvent) {
+    // Mock implementation
+  }
+
+  async handleSetDefaultOrg(event: CustomEvent) {
+    // Mock implementation
+  }
+
+  async handleSetDefaultDevHub(event: CustomEvent) {
     // Mock implementation
   }
 
@@ -106,5 +118,31 @@ export default class OrgManager extends CliElement {
       this.nonScratchOrgs.length > 0 ||
       this.otherOrgs.length > 0
     );
+  }
+
+  get defaultOrg(): OrgInfo | null {
+    // Mock implementation
+    return null;
+  }
+
+  get defaultDevHub(): OrgInfo | null {
+    // Mock implementation
+    return null;
+  }
+
+  get orgsWithIndicators() {
+    // Mock implementation
+    return {
+      devHubs: [],
+      scratchOrgs: [],
+      sandboxes: [],
+      nonScratchOrgs: [],
+      otherOrgs: []
+    };
+  }
+
+  get orgSections() {
+    // Mock implementation
+    return [];
   }
 }

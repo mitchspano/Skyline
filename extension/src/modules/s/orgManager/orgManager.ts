@@ -80,6 +80,9 @@ export default class OrgManager extends CliElement {
   @track showScratchOrgModal = false;
   @track definitionFileOptions: string[] = [];
 
+  private _currentDefaultOrg: string | null = null;
+  private _currentDefaultDevHub: string | null = null;
+
   connectedCallback() {
     this.loadOrgs();
   }
@@ -103,21 +106,43 @@ export default class OrgManager extends CliElement {
         );
       }
 
+      // Get current default org and dev hub
+      const [defaultOrgResult, defaultDevHubResult] = await Promise.all([
+        this.executeCommand("sf config get target-org"),
+        this.executeCommand("sf config get target-dev-hub")
+      ]);
+
+      const currentDefaultOrg = defaultOrgResult.stdout?.trim();
+      const currentDefaultDevHub = defaultDevHubResult.stdout?.trim();
+
       // Update each org type separately
       this.devHubs = orgListResult.result.devHubs;
       this.scratchOrgs = orgListResult.result.scratchOrgs;
       this.sandboxes = orgListResult.result.sandboxes;
+      
       // Collect all orgIds that are already shown in other sections
       const shownOrgIds = new Set([
         ...this.devHubs.map((org) => org.orgId),
         ...this.scratchOrgs.map((org) => org.orgId),
         ...this.sandboxes.map((org) => org.orgId)
       ]);
+      
       // Only show nonScratchOrgs that are not already shown
       this.nonScratchOrgs = orgListResult.result.nonScratchOrgs.filter(
         (org) => !shownOrgIds.has(org.orgId)
       );
-      this.otherOrgs = orgListResult.result.other;
+      
+      // Update shownOrgIds to include nonScratchOrgs
+      this.nonScratchOrgs.forEach(org => shownOrgIds.add(org.orgId));
+      
+      // Only show otherOrgs that are not already shown in any other section
+      this.otherOrgs = orgListResult.result.other.filter(
+        (org) => !shownOrgIds.has(org.orgId)
+      );
+
+      // Store the current defaults for use in computed properties
+      this._currentDefaultOrg = currentDefaultOrg || null;
+      this._currentDefaultDevHub = currentDefaultDevHub || null;
     } catch (error) {
       this.handleError(
         error instanceof Error ? error.message : "Failed to load orgs",
@@ -181,6 +206,68 @@ export default class OrgManager extends CliElement {
     } catch (error) {
       this.handleError(
         error instanceof Error ? error.message : "Failed to open org",
+        "Error"
+      );
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  async handleSetDefaultOrg(event: CustomEvent) {
+    const orgAlias = event.detail;
+    try {
+      this.isLoading = true;
+      const result = await this.executeCommand(
+        `sf config set target-org ${orgAlias}`
+      );
+      if (result.errorCode) {
+        throw new Error(result.stderr);
+      }
+      
+      Toast.show(
+        {
+          label: "Success",
+          message: `${orgAlias} set as default org`,
+          variant: "success"
+        },
+        this
+      );
+      
+      await this.loadOrgs();
+    } catch (error) {
+      this.handleError(
+        error instanceof Error ? error.message : "Failed to set default org",
+        "Error"
+      );
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  async handleSetDefaultDevHub(event: CustomEvent) {
+    const orgAlias = event.detail;
+    try {
+      this.isLoading = true;
+      const result = await this.executeCommand(
+        `sf config set target-dev-hub ${orgAlias}`
+      );
+      if (result.errorCode) {
+        throw new Error(result.stderr);
+      }
+      
+      Toast.show(
+        {
+          label: "Success",
+          message: `${orgAlias} set as default dev hub`,
+          variant: "success"
+        },
+        this
+      );
+      
+      await this.loadOrgs();
+    } catch (error) {
+      this.handleError(
+        error instanceof Error ? error.message : "Failed to set default dev hub",
         "Error"
       );
     } finally {
@@ -277,6 +364,120 @@ export default class OrgManager extends CliElement {
       this.otherOrgs.length > 0
     );
   }
+
+  get defaultOrg(): OrgInfo | null {
+    // Check for default org across all org types
+    const allOrgs = [
+      ...this.devHubs,
+      ...this.scratchOrgs,
+      ...this.sandboxes,
+      ...this.nonScratchOrgs,
+      ...this.otherOrgs
+    ];
+    
+    // First try to find by isDefaultUsername property
+    let defaultOrg = allOrgs.find(org => org.isDefaultUsername);
+    
+    // If not found, try to match by alias or username with config value
+    if (!defaultOrg && this._currentDefaultOrg) {
+      defaultOrg = allOrgs.find(org => 
+        org.alias === this._currentDefaultOrg || 
+        org.username === this._currentDefaultOrg
+      );
+    }
+    
+    return defaultOrg || null;
+  }
+
+  get defaultDevHub(): OrgInfo | null {
+    // First try to find by isDefaultDevHubUsername property
+    let defaultDevHub = this.devHubs.find(org => org.isDefaultDevHubUsername);
+    
+    // If not found, try to match by alias or username with config value
+    if (!defaultDevHub && this._currentDefaultDevHub) {
+      defaultDevHub = this.devHubs.find(org => 
+        org.alias === this._currentDefaultDevHub || 
+        org.username === this._currentDefaultDevHub
+      );
+    }
+    
+    return defaultDevHub || null;
+  }
+
+  get orgsWithIndicators() {
+    return {
+      devHubs: this.devHubs.map(org => ({
+        ...org,
+        isDefaultOrg: this.defaultOrg?.orgId === org.orgId,
+        isDefaultDevHub: this.defaultDevHub?.orgId === org.orgId
+      })),
+      scratchOrgs: this.scratchOrgs.map(org => ({
+        ...org,
+        isDefaultOrg: this.defaultOrg?.orgId === org.orgId,
+        isDefaultDevHub: false,
+        devHubInfo: this.devHubs.find(dh => dh.username === org.devHubUsername)
+      })),
+      sandboxes: this.sandboxes.map(org => ({
+        ...org,
+        isDefaultOrg: this.defaultOrg?.orgId === org.orgId,
+        isDefaultDevHub: false
+      })),
+      nonScratchOrgs: this.nonScratchOrgs.map(org => ({
+        ...org,
+        isDefaultOrg: this.defaultOrg?.orgId === org.orgId,
+        isDefaultDevHub: false
+      })),
+      otherOrgs: this.otherOrgs.map(org => ({
+        ...org,
+        isDefaultOrg: this.defaultOrg?.orgId === org.orgId,
+        isDefaultDevHub: false
+      }))
+    };
+  }
+
+  get orgSections() {
+    const sections = [
+      {
+        title: 'Dev Hubs',
+        orgs: this.orgsWithIndicators.devHubs,
+        hasOrgs: this.devHubs.length > 0,
+        showExpiration: false,
+        headingClass: 'slds-text-heading_medium slds-p-bottom_medium'
+      },
+      {
+        title: 'Scratch Orgs',
+        orgs: this.orgsWithIndicators.scratchOrgs,
+        hasOrgs: this.scratchOrgs.length > 0,
+        showExpiration: true,
+        headingClass: 'slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium'
+      },
+      {
+        title: 'Sandboxes',
+        orgs: this.orgsWithIndicators.sandboxes,
+        hasOrgs: this.sandboxes.length > 0,
+        showExpiration: false,
+        headingClass: 'slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium'
+      },
+      {
+        title: 'Non-Scratch Orgs',
+        orgs: this.orgsWithIndicators.nonScratchOrgs,
+        hasOrgs: this.nonScratchOrgs.length > 0,
+        showExpiration: false,
+        headingClass: 'slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium'
+      },
+      {
+        title: 'Other Orgs',
+        orgs: this.orgsWithIndicators.otherOrgs,
+        hasOrgs: this.otherOrgs.length > 0,
+        showExpiration: false,
+        headingClass: 'slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium'
+      }
+    ];
+
+    return sections.filter(section => section.hasOrgs);
+  }
+
+
 
   private async handleError(error: string, label: string) {
     Toast.show({ label: label, message: error, variant: "error" }, this);

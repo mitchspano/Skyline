@@ -54,94 +54,29 @@
         </template>
         <template if:true={hasOrgs}>
           <div class="slds-box slds-m-around_medium">
-            <template if:true={devHubs.length}>
-              <div class="slds-text-heading_medium slds-p-bottom_medium">
-                <u>Dev Hubs</u>
+            <template for:each={orgSections} for:item="section">
+              <div key={section.title}>
+                <div class={section.headingClass}>
+                  <u>{section.title}</u>
+                </div>
+                <ul class="slds-has-dividers_bottom-space">
+                  <template for:each={section.orgs} for:item="org">
+                    <s-org-list-item
+                      key={org.alias}
+                      org={org}
+                      is-loading={isLoading}
+                      show-expiration={section.showExpiration}
+                      is-default-org={org.isDefaultOrg}
+                      is-default-dev-hub={org.isDefaultDevHub}
+                      dev-hub-info={org.devHubInfo}
+                      onremoveorg={handleRemoveOrg}
+                      onopenorg={handleOpenOrg}
+                      onsetdefaultorg={handleSetDefaultOrg}
+                      onsetdefaultdevhub={handleSetDefaultDevHub}
+                    ></s-org-list-item>
+                  </template>
+                </ul>
               </div>
-              <ul class="slds-has-dividers_bottom-space">
-                <template for:each={devHubs} for:item="org">
-                  <s-org-list-item
-                    key={org.alias}
-                    org={org}
-                    is-loading={isLoading}
-                    onremoveorg={handleRemoveOrg}
-                    onopenorg={handleOpenOrg}
-                  ></s-org-list-item>
-                </template>
-              </ul>
-            </template>
-            <template if:true={scratchOrgs.length}>
-              <div
-                class="slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium"
-              >
-                <u>Scratch Orgs</u>
-              </div>
-              <ul class="slds-has-dividers_bottom-space">
-                <template for:each={scratchOrgs} for:item="org">
-                  <s-org-list-item
-                    key={org.alias}
-                    org={org}
-                    is-loading={isLoading}
-                    show-expiration="true"
-                    onremoveorg={handleRemoveOrg}
-                    onopenorg={handleOpenOrg}
-                  ></s-org-list-item>
-                </template>
-              </ul>
-            </template>
-            <template if:true={sandboxes.length}>
-              <div
-                class="slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium"
-              >
-                <u>Sandboxes</u>
-              </div>
-              <ul class="slds-has-dividers_bottom-space">
-                <template for:each={sandboxes} for:item="org">
-                  <s-org-list-item
-                    key={org.alias}
-                    org={org}
-                    is-loading={isLoading}
-                    onremoveorg={handleRemoveOrg}
-                    onopenorg={handleOpenOrg}
-                  ></s-org-list-item>
-                </template>
-              </ul>
-            </template>
-            <template if:true={nonScratchOrgs.length}>
-              <div
-                class="slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium"
-              >
-                <u>Non-Scratch Orgs</u>
-              </div>
-              <ul class="slds-has-dividers_bottom-space">
-                <template for:each={nonScratchOrgs} for:item="org">
-                  <s-org-list-item
-                    key={org.alias}
-                    org={org}
-                    is-loading={isLoading}
-                    onremoveorg={handleRemoveOrg}
-                    onopenorg={handleOpenOrg}
-                  ></s-org-list-item>
-                </template>
-              </ul>
-            </template>
-            <template if:true={otherOrgs.length}>
-              <div
-                class="slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium"
-              >
-                <u>Other Orgs</u>
-              </div>
-              <ul class="slds-has-dividers_bottom-space">
-                <template for:each={otherOrgs} for:item="org">
-                  <s-org-list-item
-                    key={org.alias}
-                    org={org}
-                    is-loading={isLoading}
-                    onremoveorg={handleRemoveOrg}
-                    onopenorg={handleOpenOrg}
-                  ></s-org-list-item>
-                </template>
-              </ul>
             </template>
           </div>
         </template>

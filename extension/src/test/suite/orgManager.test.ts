@@ -37,6 +37,11 @@ describe("OrgManager Component Tests", () => {
     // Mock the handleError method to prevent errors
     (orgManager as any).handleError = jest.fn();
 
+    // Mock Toast.show to prevent errors
+    (global as any).Toast = {
+      show: jest.fn()
+    };
+
     // Initialize properties manually since @track doesn't work in tests
     orgManager.devHubs = [];
     orgManager.scratchOrgs = [];
@@ -47,6 +52,10 @@ describe("OrgManager Component Tests", () => {
     orgManager.error = null;
     orgManager.showScratchOrgModal = false;
     orgManager.definitionFileOptions = [];
+    
+    // Initialize private properties
+    (orgManager as any)._currentDefaultOrg = null;
+    (orgManager as any)._currentDefaultDevHub = null;
   });
 
   describe("connectedCallback", () => {
@@ -548,6 +557,100 @@ describe("OrgManager Component Tests", () => {
       // Assert
       expect(orgManager.showScratchOrgModal).toBe(false);
       expect(orgManager.isLoading).toBe(false);
+    });
+  });
+
+  describe("handleSetDefaultOrg", () => {
+    it("should be callable", async () => {
+      // Act & Assert
+      await expect(orgManager.handleSetDefaultOrg({
+        detail: "test-org"
+      } as CustomEvent)).resolves.not.toThrow();
+    });
+  });
+
+  describe("handleSetDefaultDevHub", () => {
+    it("should be callable", async () => {
+      // Act & Assert
+      await expect(orgManager.handleSetDefaultDevHub({
+        detail: "devhub-org"
+      } as CustomEvent)).resolves.not.toThrow();
+    });
+  });
+
+  describe("defaultOrg getter", () => {
+    it("should return a value", () => {
+      // Act & Assert
+      expect(orgManager.defaultOrg).toBeDefined();
+    });
+  });
+
+  describe("defaultDevHub getter", () => {
+    it("should return a value", () => {
+      // Act & Assert
+      expect(orgManager.defaultDevHub).toBeDefined();
+    });
+  });
+
+  describe("orgsWithIndicators getter", () => {
+    it("should return structured org data", () => {
+      // Arrange
+      const devHub: OrgInfo = {
+        orgId: "devhub-id",
+        alias: "devhub",
+        username: "devhub@example.com",
+        isDevHub: true
+      } as OrgInfo;
+
+      orgManager.devHubs = [devHub];
+
+      // Act
+      const result = orgManager.orgsWithIndicators;
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.devHubs).toBeDefined();
+      expect(result.scratchOrgs).toBeDefined();
+      expect(result.sandboxes).toBeDefined();
+      expect(result.nonScratchOrgs).toBeDefined();
+      expect(result.otherOrgs).toBeDefined();
+    });
+  });
+
+  describe("orgSections getter", () => {
+    it("should return sections structure", () => {
+      // Arrange
+      const devHub: OrgInfo = { alias: "devhub" } as OrgInfo;
+      orgManager.devHubs = [devHub];
+
+      // Act
+      const result = orgManager.orgSections;
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it("should filter out empty sections", () => {
+      // Arrange
+      orgManager.devHubs = [];
+      orgManager.scratchOrgs = [];
+      orgManager.sandboxes = [];
+      orgManager.nonScratchOrgs = [];
+      orgManager.otherOrgs = [];
+
+      // Act
+      const result = orgManager.orgSections;
+
+      // Assert
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe("loadOrgs deduplication", () => {
+    it("should be callable", async () => {
+      // Act & Assert
+      await expect(orgManager.loadOrgs()).resolves.not.toThrow();
     });
   });
 

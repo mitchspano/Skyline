@@ -1,0 +1,75 @@
+/**
+ * Copyright 2025 Mitch Spano
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.org-item {
+  border-left: 3px solid transparent;
+  transition: border-left-color 0.2s ease;
+}
+
+.org-item.default-org {
+  border-left-color: #04844b;
+  background-color: #f3f2f2;
+}
+
+.org-item.default-dev-hub {
+  border-left-color: #0176d3;
+  background-color: #f3f2f2;
+}
+
+.org-item.default-org.default-dev-hub {
+  border-left-color: #0176d3;
+  background: linear-gradient(90deg, #f3f2f2 0%, #f8f9fa 100%);
+}
+
+.org-alias-container {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.org-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+}
+
+.org-badge.default-org {
+  background-color: #04844b;
+  color: white;
+}
+
+.org-badge.default-dev-hub {
+  background-color: #0176d3;
+  color: white;
+}
+
+.dev-hub-info {
+  font-size: 0.875rem;
+  color: #706e6b;
+  font-style: italic;
+}
+
+.org-item:hover {
+  background-color: #f8f9fa;
+}
+
+.org-item.default-org:hover,
+.org-item.default-dev-hub:hover {
+  background-color: #eef1f6;
+} 
