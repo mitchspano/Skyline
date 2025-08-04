@@ -52,7 +52,7 @@ describe("OrgManager Component Tests", () => {
     orgManager.error = null;
     orgManager.showScratchOrgModal = false;
     orgManager.definitionFileOptions = [];
-    
+
     // Initialize private properties
     (orgManager as any)._currentDefaultOrg = null;
     (orgManager as any)._currentDefaultDevHub = null;
@@ -563,18 +563,22 @@ describe("OrgManager Component Tests", () => {
   describe("handleSetDefaultOrg", () => {
     it("should be callable", async () => {
       // Act & Assert
-      await expect(orgManager.handleSetDefaultOrg({
-        detail: "test-org"
-      } as CustomEvent)).resolves.not.toThrow();
+      await expect(
+        orgManager.handleSetDefaultOrg({
+          detail: "test-org"
+        } as CustomEvent)
+      ).resolves.not.toThrow();
     });
   });
 
   describe("handleSetDefaultDevHub", () => {
     it("should be callable", async () => {
       // Act & Assert
-      await expect(orgManager.handleSetDefaultDevHub({
-        detail: "devhub-org"
-      } as CustomEvent)).resolves.not.toThrow();
+      await expect(
+        orgManager.handleSetDefaultDevHub({
+          detail: "devhub-org"
+        } as CustomEvent)
+      ).resolves.not.toThrow();
     });
   });
 

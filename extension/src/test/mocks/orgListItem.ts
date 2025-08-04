@@ -67,7 +67,7 @@ export default class OrgListItem {
     if (this.devHubInfo) {
       return this.devHubInfo.alias || this.devHubInfo.username;
     }
-    return this.org.devHubUsername || 'Unknown Dev Hub';
+    return this.org.devHubUsername || "Unknown Dev Hub";
   }
 
   get hasIndicators() {
@@ -81,12 +81,12 @@ export default class OrgListItem {
   get orgItemClass() {
     const classes = [];
     if (this.isDefaultOrg) {
-      classes.push('default-org');
+      classes.push("default-org");
     }
     if (this.isDefaultDevHub) {
-      classes.push('default-dev-hub');
+      classes.push("default-dev-hub");
     }
-    return classes.join(' ');
+    return classes.join(" ");
   }
 
   handleRemoveOrg(event: CustomEvent) {
@@ -127,22 +127,22 @@ export default class OrgListItem {
 
   handleMenuSelect(event: CustomEvent) {
     const selectedValue = event.detail.value;
-    
+
     switch (selectedValue) {
-      case 'open':
+      case "open":
         this.handleOpenOrg(event);
         break;
-      case 'set-default':
+      case "set-default":
         this.handleSetDefaultOrg(event);
         break;
-      case 'set-dev-hub':
+      case "set-dev-hub":
         this.handleSetDefaultDevHub(event);
         break;
-      case 'remove':
+      case "remove":
         this.handleRemoveOrg(event);
         break;
       default:
-        console.warn('Unknown menu selection:', selectedValue);
+        console.warn("Unknown menu selection:", selectedValue);
     }
   }
 }

@@ -119,22 +119,22 @@ export default class OrgManager extends CliElement {
       this.devHubs = orgListResult.result.devHubs;
       this.scratchOrgs = orgListResult.result.scratchOrgs;
       this.sandboxes = orgListResult.result.sandboxes;
-      
+
       // Collect all orgIds that are already shown in other sections
       const shownOrgIds = new Set([
         ...this.devHubs.map((org) => org.orgId),
         ...this.scratchOrgs.map((org) => org.orgId),
         ...this.sandboxes.map((org) => org.orgId)
       ]);
-      
+
       // Only show nonScratchOrgs that are not already shown
       this.nonScratchOrgs = orgListResult.result.nonScratchOrgs.filter(
         (org) => !shownOrgIds.has(org.orgId)
       );
-      
+
       // Update shownOrgIds to include nonScratchOrgs
-      this.nonScratchOrgs.forEach(org => shownOrgIds.add(org.orgId));
-      
+      this.nonScratchOrgs.forEach((org) => shownOrgIds.add(org.orgId));
+
       // Only show otherOrgs that are not already shown in any other section
       this.otherOrgs = orgListResult.result.other.filter(
         (org) => !shownOrgIds.has(org.orgId)
@@ -223,7 +223,7 @@ export default class OrgManager extends CliElement {
       if (result.errorCode) {
         throw new Error(result.stderr);
       }
-      
+
       Toast.show(
         {
           label: "Success",
@@ -232,7 +232,7 @@ export default class OrgManager extends CliElement {
         },
         this
       );
-      
+
       await this.loadOrgs();
     } catch (error) {
       this.handleError(
@@ -254,7 +254,7 @@ export default class OrgManager extends CliElement {
       if (result.errorCode) {
         throw new Error(result.stderr);
       }
-      
+
       Toast.show(
         {
           label: "Success",
@@ -263,11 +263,13 @@ export default class OrgManager extends CliElement {
         },
         this
       );
-      
+
       await this.loadOrgs();
     } catch (error) {
       this.handleError(
-        error instanceof Error ? error.message : "Failed to set default dev hub",
+        error instanceof Error
+          ? error.message
+          : "Failed to set default dev hub",
         "Error"
       );
     } finally {
@@ -374,60 +376,64 @@ export default class OrgManager extends CliElement {
       ...this.nonScratchOrgs,
       ...this.otherOrgs
     ];
-    
+
     // First try to find by isDefaultUsername property
-    let defaultOrg = allOrgs.find(org => org.isDefaultUsername);
-    
+    let defaultOrg = allOrgs.find((org) => org.isDefaultUsername);
+
     // If not found, try to match by alias or username with config value
     if (!defaultOrg && this._currentDefaultOrg) {
-      defaultOrg = allOrgs.find(org => 
-        org.alias === this._currentDefaultOrg || 
-        org.username === this._currentDefaultOrg
+      defaultOrg = allOrgs.find(
+        (org) =>
+          org.alias === this._currentDefaultOrg ||
+          org.username === this._currentDefaultOrg
       );
     }
-    
+
     return defaultOrg || null;
   }
 
   get defaultDevHub(): OrgInfo | null {
     // First try to find by isDefaultDevHubUsername property
-    let defaultDevHub = this.devHubs.find(org => org.isDefaultDevHubUsername);
-    
+    let defaultDevHub = this.devHubs.find((org) => org.isDefaultDevHubUsername);
+
     // If not found, try to match by alias or username with config value
     if (!defaultDevHub && this._currentDefaultDevHub) {
-      defaultDevHub = this.devHubs.find(org => 
-        org.alias === this._currentDefaultDevHub || 
-        org.username === this._currentDefaultDevHub
+      defaultDevHub = this.devHubs.find(
+        (org) =>
+          org.alias === this._currentDefaultDevHub ||
+          org.username === this._currentDefaultDevHub
       );
     }
-    
+
     return defaultDevHub || null;
   }
 
   get orgsWithIndicators() {
     return {
-      devHubs: this.devHubs.map(org => ({
+      devHubs: this.devHubs.map((org) => ({
         ...org,
         isDefaultOrg: this.defaultOrg?.orgId === org.orgId,
         isDefaultDevHub: this.defaultDevHub?.orgId === org.orgId
       })),
-      scratchOrgs: this.scratchOrgs.map(org => ({
+      scratchOrgs: this.scratchOrgs.map((org) => ({
         ...org,
         isDefaultOrg: this.defaultOrg?.orgId === org.orgId,
         isDefaultDevHub: false,
-        devHubInfo: this.devHubs.find(dh => dh.username === org.devHubUsername)
+        devHubInfo: this.devHubs.find(
+          (dh) => dh.username === org.devHubUsername
+        )
       })),
-      sandboxes: this.sandboxes.map(org => ({
+      sandboxes: this.sandboxes.map((org) => ({
         ...org,
         isDefaultOrg: this.defaultOrg?.orgId === org.orgId,
         isDefaultDevHub: false
       })),
-      nonScratchOrgs: this.nonScratchOrgs.map(org => ({
+      nonScratchOrgs: this.nonScratchOrgs.map((org) => ({
         ...org,
         isDefaultOrg: this.defaultOrg?.orgId === org.orgId,
         isDefaultDevHub: false
       })),
-      otherOrgs: this.otherOrgs.map(org => ({
+      otherOrgs: this.otherOrgs.map((org) => ({
         ...org,
         isDefaultOrg: this.defaultOrg?.orgId === org.orgId,
         isDefaultDevHub: false
@@ -438,46 +444,48 @@ export default class OrgManager extends CliElement {
   get orgSections() {
     const sections = [
       {
-        title: 'Dev Hubs',
+        title: "Dev Hubs",
         orgs: this.orgsWithIndicators.devHubs,
         hasOrgs: this.devHubs.length > 0,
         showExpiration: false,
-        headingClass: 'slds-text-heading_medium slds-p-bottom_medium'
+        headingClass: "slds-text-heading_medium slds-p-bottom_medium"
       },
       {
-        title: 'Scratch Orgs',
+        title: "Scratch Orgs",
         orgs: this.orgsWithIndicators.scratchOrgs,
         hasOrgs: this.scratchOrgs.length > 0,
         showExpiration: true,
-        headingClass: 'slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium'
+        headingClass:
+          "slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium"
       },
       {
-        title: 'Sandboxes',
+        title: "Sandboxes",
         orgs: this.orgsWithIndicators.sandboxes,
         hasOrgs: this.sandboxes.length > 0,
         showExpiration: false,
-        headingClass: 'slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium'
+        headingClass:
+          "slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium"
       },
       {
-        title: 'Non-Scratch Orgs',
+        title: "Non-Scratch Orgs",
         orgs: this.orgsWithIndicators.nonScratchOrgs,
         hasOrgs: this.nonScratchOrgs.length > 0,
         showExpiration: false,
-        headingClass: 'slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium'
+        headingClass:
+          "slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium"
       },
       {
-        title: 'Other Orgs',
+        title: "Other Orgs",
         orgs: this.orgsWithIndicators.otherOrgs,
         hasOrgs: this.otherOrgs.length > 0,
         showExpiration: false,
-        headingClass: 'slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium'
+        headingClass:
+          "slds-text-heading_medium slds-p-bottom_medium slds-p-top_medium"
       }
     ];
 
-    return sections.filter(section => section.hasOrgs);
+    return sections.filter((section) => section.hasOrgs);
   }
-
-
 
   private async handleError(error: string, label: string) {
     Toast.show({ label: label, message: error, variant: "error" }, this);

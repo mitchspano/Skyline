@@ -319,7 +319,7 @@ describe("OrgListItem Component Tests", () => {
     let consoleWarnSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
     });
 
     afterEach(() => {
@@ -340,7 +340,10 @@ describe("OrgListItem Component Tests", () => {
 
     it("should call handleSetDefaultOrg when 'set-default' is selected", () => {
       // Arrange
-      const handleSetDefaultOrgSpy = jest.spyOn(orgListItem, "handleSetDefaultOrg");
+      const handleSetDefaultOrgSpy = jest.spyOn(
+        orgListItem,
+        "handleSetDefaultOrg"
+      );
       const event = { detail: { value: "set-default" } } as CustomEvent;
 
       // Act
@@ -352,7 +355,10 @@ describe("OrgListItem Component Tests", () => {
 
     it("should call handleSetDefaultDevHub when 'set-dev-hub' is selected", () => {
       // Arrange
-      const handleSetDefaultDevHubSpy = jest.spyOn(orgListItem, "handleSetDefaultDevHub");
+      const handleSetDefaultDevHubSpy = jest.spyOn(
+        orgListItem,
+        "handleSetDefaultDevHub"
+      );
       const event = { detail: { value: "set-dev-hub" } } as CustomEvent;
 
       // Act
@@ -382,7 +388,10 @@ describe("OrgListItem Component Tests", () => {
       orgListItem.handleMenuSelect(event);
 
       // Assert
-      expect(consoleWarnSpy).toHaveBeenCalledWith('Unknown menu selection:', 'unknown-action');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "Unknown menu selection:",
+        "unknown-action"
+      );
     });
 
     it("should handle empty value gracefully", () => {
@@ -393,7 +402,10 @@ describe("OrgListItem Component Tests", () => {
       orgListItem.handleMenuSelect(event);
 
       // Assert
-      expect(consoleWarnSpy).toHaveBeenCalledWith('Unknown menu selection:', '');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "Unknown menu selection:",
+        ""
+      );
     });
   });
 
@@ -413,7 +425,9 @@ describe("OrgListItem Component Tests", () => {
         const event = { detail: { value } } as CustomEvent;
         orgListItem.handleMenuSelect(event);
 
-        const lastCall = dispatchEventSpy.mock.calls[dispatchEventSpy.mock.calls.length - 1][0] as CustomEvent;
+        const lastCall = dispatchEventSpy.mock.calls[
+          dispatchEventSpy.mock.calls.length - 1
+        ][0] as CustomEvent;
         expect(lastCall.type).toBe(expectedEvent);
       });
 
