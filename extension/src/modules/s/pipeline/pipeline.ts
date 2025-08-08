@@ -20,41 +20,18 @@ import CliElement from "../cliElement/cliElement";
 import { ExecuteResult, Pages } from "../app/app";
 import Toast from "lightning-base-components/src/lightning/toast/toast.js";
 import { marked } from "marked";
+import type { VersionControlSystem, PullRequest as VCSPullRequest } from "../../../types/version-control";
+import { VersionControlSystemFactory } from "./vcs-factory";
 
 const CONFIGURATION_FILE_NAME = "skyline.config.json";
 const OPEN_PR_STATE = "OPEN";
 
 const COMMANDS = {
-  openConfigurationFile: `cat ${CONFIGURATION_FILE_NAME}`,
-  searchPullRequests: (searchTerm: string) =>
-    `gh pr list --json number,title,body,baseRefName,url,files,createdAt,state,closedAt --search "${searchTerm}" --state all`,
-  validateGitHubCLI: "gh --version",
-  validateGitHubAuth: "gh auth status"
+  openConfigurationFile: `cat ${CONFIGURATION_FILE_NAME}`
 };
 
-interface PullRequestFile {
-  path: string;
-  status: string; // "added", "modified", "removed", etc.
-  isAdded: boolean;
-  isModified: boolean;
-  isRemoved: boolean;
-}
-
-interface PullRequest {
-  number: number;
-  title: string;
-  body: string;
-  renderedBody?: string;
-  baseRefName: string;
-  url: string;
-  files: PullRequestFile[];
-  bodySectionName?: string;
-  filesSectionName?: string;
-  createdAt: string;
-  state: string;
-  closedAt?: string;
-  stateBadgeClass: string;
-}
+// Use the PullRequest interface from version-control types
+type PullRequest = VCSPullRequest;
 
 interface GroupedPR {
   key: string; // branch name
@@ -77,6 +54,7 @@ export default class Pipeline extends CliElement {
   @track validationError?: string = undefined;
   @track isValidationComplete = false;
   @track configurationError?: string = undefined;
+  private versionControlSystem?: VersionControlSystem = undefined;
 
   connectedCallback() {
     this.loadConfiguration();
@@ -133,8 +111,9 @@ export default class Pipeline extends CliElement {
       const result = await this.executeCommand(COMMANDS.openConfigurationFile);
       this.handleOpenConfigurationFile(result);
       
-      // Validate version control system after loading configuration
+      // Initialize version control system and validate after loading configuration
       if (this.configurationFileContents) {
+        await this.initializeVersionControlSystem();
         await this.validateVersionControlSystem();
       }
     } catch (error) {
@@ -172,32 +151,24 @@ export default class Pipeline extends CliElement {
   }
 
   private async executeSearch(): Promise<void> {
+    if (!this.versionControlSystem) {
+      this.handleError("Version control system not initialized", "Search Error");
+      return;
+    }
+
     try {
       this.isLoading = true;
-      const result = await this.executeCommand(
-        COMMANDS.searchPullRequests(this.searchTerm)
-      );
-      await this.handleSearchResults(result);
+      const pullRequests = await this.versionControlSystem.searchPullRequests(this.searchTerm);
+      await this.handleSearchResults(pullRequests);
     } catch (error) {
-      this.handleError("Failed to search pull requests", "Search Error");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      this.handleError(errorMessage, "Search Error");
     } finally {
       this.isLoading = false;
     }
   }
 
-  private sortPullRequests(pullRequests: PullRequest[]): PullRequest[] {
-    return pullRequests.sort((a, b) => {
-      // First compare by state
-      if (a.state === OPEN_PR_STATE && b.state !== OPEN_PR_STATE) {
-        return -1;
-      }
-      if (a.state !== OPEN_PR_STATE && b.state === OPEN_PR_STATE) {
-        return 1;
-      }
-      // If states are the same, sort by date (newest first)
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
-  }
+
 
   private sanitizeHtml(html: string): string {
     // Basic HTML sanitization - only allow safe tags
@@ -323,33 +294,27 @@ export default class Pipeline extends CliElement {
     };
   }
 
-  private async handleSearchResults(result: ExecuteResult) {
-    if (result.stdout) {
-      try {
-        const pullRequests = JSON.parse(result.stdout);
-        if (pullRequests.length === 0) {
-          this.searchMessage = `No changes found matching "${this.searchTerm}"`;
-          this.pullRequests = [];
-        } else {
-          this.searchMessage = "";
-          const sortedPullRequests = this.sortPullRequests(pullRequests);
-          // Map pull requests asynchronously
-          const mappedPullRequests = await Promise.all(
-            sortedPullRequests.map((pr) => this.mapPullRequest(pr))
-          );
-          this.pullRequests = mappedPullRequests;
-          // Render markdown content after the DOM is updated
-          setTimeout(() => {
-            this.renderMarkdownContent();
-          }, 0);
-        }
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
-        this.handleError("Error parsing search results:", errorMessage);
+  private async handleSearchResults(pullRequests: PullRequest[]) {
+    try {
+      if (pullRequests.length === 0) {
+        this.searchMessage = `No changes found matching "${this.searchTerm}"`;
+        this.pullRequests = [];
+      } else {
+        this.searchMessage = "";
+        // Map pull requests asynchronously to add rendered body
+        const mappedPullRequests = await Promise.all(
+          pullRequests.map((pr) => this.mapPullRequest(pr))
+        );
+        this.pullRequests = mappedPullRequests;
+        // Render markdown content after the DOM is updated
+        setTimeout(() => {
+          this.renderMarkdownContent();
+        }, 0);
       }
-    } else if (result.stderr) {
-      this.handleError("Error searching pull requests:", result.stderr);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.handleError("Error processing search results:", errorMessage);
     }
   }
 
@@ -357,46 +322,75 @@ export default class Pipeline extends CliElement {
     Toast.show({ label: label, message: error, variant: "error" }, this);
   }
 
-  async validateVersionControlSystem(): Promise<void> {
+  private async initializeVersionControlSystem(): Promise<void> {
     if (!this.configurationFileContents?.versionControlSystem) {
       this.validationError = "Version control system not configured. Please configure it in the Project Configuration page.";
       this.isValidationComplete = false;
       return;
     }
 
-    const vcs = this.configurationFileContents.versionControlSystem;
+    const vcsType = this.configurationFileContents.versionControlSystem;
     
-    if (vcs === "GitHub") {
-      try {
-        // Check if GitHub CLI is installed
-        const cliResult = await this.executeCommand(COMMANDS.validateGitHubCLI);
-        if (cliResult.errorCode) {
-          this.validationError = "GitHub CLI (gh) is not installed. Please install it from https://cli.github.com/";
-          this.isValidationComplete = false;
-          return;
-        }
-
-        // Check if user is authenticated
-        const authResult = await this.executeCommand(COMMANDS.validateGitHubAuth);
-        if (authResult.errorCode) {
-          this.validationError = "You are not authenticated with GitHub CLI. Please run 'gh auth login' to authenticate.";
-          this.isValidationComplete = false;
-          return;
-        }
-
-        // Validation successful
-        this.isValidationComplete = true;
-        this.validationError = undefined;
-      } catch (error) {
-        console.log("Error during validation:", error);
-        this.validationError = "Failed to validate GitHub CLI installation or authentication.";
+    try {
+      // Check if the VCS type is supported
+      if (!VersionControlSystemFactory.isSupported(vcsType)) {
+        const supportedSystems = VersionControlSystemFactory.getSupportedSystems().join(", ");
+        this.validationError = `Version control system '${vcsType}' is not supported. Supported systems are: ${supportedSystems}`;
         this.isValidationComplete = false;
+        return;
       }
-    } else {
-      this.validationError = `Version control system '${vcs}' is not supported. Currently only GitHub is supported.`;
+
+      // Check if the VCS type is implemented
+      if (!VersionControlSystemFactory.isImplemented(vcsType)) {
+        this.validationError = `Version control system '${vcsType}' support is not yet implemented. Coming soon!`;
+        this.isValidationComplete = false;
+        return;
+      }
+
+      // Create the VCS implementation
+      this.versionControlSystem = VersionControlSystemFactory.create(
+        vcsType,
+        this.executeCommand.bind(this)
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      this.validationError = `Failed to initialize version control system: ${errorMessage}`;
       this.isValidationComplete = false;
     }
-    
+  }
+
+  async validateVersionControlSystem(): Promise<void> {
+    if (!this.versionControlSystem) {
+      this.validationError = "Version control system not initialized";
+      this.isValidationComplete = false;
+      return;
+    }
+
+    try {
+      // Validate CLI installation
+      const cliValidation = await this.versionControlSystem.validateCliInstallation();
+      if (!cliValidation.isValid) {
+        this.validationError = cliValidation.errorMessage;
+        this.isValidationComplete = false;
+        return;
+      }
+
+      // Validate authentication
+      const authValidation = await this.versionControlSystem.validateAuthentication();
+      if (!authValidation.isValid) {
+        this.validationError = authValidation.errorMessage;
+        this.isValidationComplete = false;
+        return;
+      }
+
+      // Validation successful
+      this.isValidationComplete = true;
+      this.validationError = undefined;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      this.validationError = `Failed to validate ${this.versionControlSystem.getName()}: ${errorMessage}`;
+      this.isValidationComplete = false;
+    }
   }
 
   get groupedPullRequests(): GroupedPR[] {
