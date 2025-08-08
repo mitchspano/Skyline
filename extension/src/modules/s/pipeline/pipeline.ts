@@ -27,7 +27,9 @@ const OPEN_PR_STATE = "OPEN";
 const COMMANDS = {
   openConfigurationFile: `cat ${CONFIGURATION_FILE_NAME}`,
   searchPullRequests: (searchTerm: string) =>
-    `gh pr list --json number,title,body,baseRefName,url,files,createdAt,state,closedAt --search "${searchTerm}" --state all`
+    `gh pr list --json number,title,body,baseRefName,url,files,createdAt,state,closedAt --search "${searchTerm}" --state all`,
+  validateGitHubCLI: "gh --version",
+  validateGitHubAuth: "gh auth status"
 };
 
 interface PullRequestFile {
@@ -66,12 +68,15 @@ interface GroupedPR {
 
 export default class Pipeline extends CliElement {
   @track searchTerm = "";
-  @track configurationFileContents?: SkylineConfig;
+  @track configurationFileContents?: SkylineConfig = undefined;
   @track isLoading = true;
   @track searchMessage = "";
   @track pullRequests: PullRequest[] = [];
   @track activeSections: string[] = [];
   @track orderedBranches: string[] = [];
+  @track validationError?: string = undefined;
+  @track isValidationComplete = false;
+  @track configurationError?: string = undefined;
 
   connectedCallback() {
     this.loadConfiguration();
@@ -88,6 +93,15 @@ export default class Pipeline extends CliElement {
   handleSectionToggle(event: CustomEvent) {
     this.activeSections = event.detail.openSections;
     this.renderMarkdownContent();
+  }
+
+  handleGoToConfiguration() {
+    // Navigate to the Project Configuration page
+    // This will be handled by the parent component or navigation system
+    const event = new CustomEvent('navigate', {
+      detail: { page: 'repoConfig' }
+    });
+    this.dispatchEvent(event);
   }
 
   private renderMarkdownContent() {
@@ -116,6 +130,11 @@ export default class Pipeline extends CliElement {
       this.isLoading = true;
       const result = await this.executeCommand(COMMANDS.openConfigurationFile);
       this.handleOpenConfigurationFile(result);
+      
+      // Validate version control system after loading configuration
+      if (this.configurationFileContents) {
+        await this.validateVersionControlSystem();
+      }
     } catch (error) {
       this.handleError("Failed to load configuration", "Configuration Error");
     } finally {
@@ -123,17 +142,30 @@ export default class Pipeline extends CliElement {
     }
   }
 
-  private handleOpenConfigurationFile(result: ExecuteResult) {
+  handleOpenConfigurationFile(result: ExecuteResult) {
+    if (result.errorCode) {
+      // Configuration file doesn't exist
+      this.configurationError = "Configuration file 'skyline.config.json' not found. Please configure your project in the Project Configuration page first.";
+      this.configurationFileContents = undefined;
+      return;
+    }
+
     if (result.stdout) {
       try {
         this.configurationFileContents = JSON.parse(result.stdout);
         this.orderedBranches =
           this.configurationFileContents?.pipelineOrder || [];
+        this.configurationError = undefined; // Clear any previous errors
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
-        this.handleError("Error parsing configuration file:", errorMessage);
+        this.configurationError = `Error parsing configuration file: ${errorMessage}`;
+        this.configurationFileContents = undefined;
       }
+    } else {
+      // No stdout but no error code - this shouldn't happen, but handle it gracefully
+      this.configurationError = "Configuration file 'skyline.config.json' not found. Please configure your project in the Project Configuration page first.";
+      this.configurationFileContents = undefined;
     }
   }
 
@@ -321,6 +353,48 @@ export default class Pipeline extends CliElement {
 
   private async handleError(error: string, label: string) {
     Toast.show({ label: label, message: error, variant: "error" }, this);
+  }
+
+  async validateVersionControlSystem(): Promise<void> {
+    if (!this.configurationFileContents?.versionControlSystem) {
+      this.validationError = "Version control system not configured. Please configure it in the Project Configuration page.";
+      this.isValidationComplete = false;
+      return;
+    }
+
+    const vcs = this.configurationFileContents.versionControlSystem;
+    
+    if (vcs === "GitHub") {
+      try {
+        // Check if GitHub CLI is installed
+        const cliResult = await this.executeCommand(COMMANDS.validateGitHubCLI);
+        if (cliResult.errorCode) {
+          this.validationError = "GitHub CLI (gh) is not installed. Please install it from https://cli.github.com/";
+          this.isValidationComplete = false;
+          return;
+        }
+
+        // Check if user is authenticated
+        const authResult = await this.executeCommand(COMMANDS.validateGitHubAuth);
+        if (authResult.errorCode) {
+          this.validationError = "You are not authenticated with GitHub CLI. Please run 'gh auth login' to authenticate.";
+          this.isValidationComplete = false;
+          return;
+        }
+
+        // Validation successful
+        this.isValidationComplete = true;
+        this.validationError = undefined;
+      } catch (error) {
+        console.log("Error during validation:", error);
+        this.validationError = "Failed to validate GitHub CLI installation or authentication.";
+        this.isValidationComplete = false;
+      }
+    } else {
+      this.validationError = `Version control system '${vcs}' is not supported. Currently only GitHub is supported.`;
+      this.isValidationComplete = false;
+    }
+    
   }
 
   get groupedPullRequests(): GroupedPR[] {

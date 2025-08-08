@@ -185,6 +185,7 @@ describe("RepoConfig Component Tests", () => {
       // Arrange
       const configData = {
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main", "develop"],
         branches: {
           main: createTestEnvironmentConfig("Production"),
@@ -385,6 +386,7 @@ describe("RepoConfig Component Tests", () => {
       // Arrange
       repoConfig.configurationFileContents = {
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main", "develop", "feature"],
         branches: {
           main: createTestEnvironmentConfig("Production"),
@@ -417,6 +419,7 @@ describe("RepoConfig Component Tests", () => {
       // Arrange
       repoConfig.configurationFileContents = {
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main", "develop"],
         branches: {
           main: createTestEnvironmentConfig("Production"),
@@ -449,6 +452,7 @@ describe("RepoConfig Component Tests", () => {
       // Arrange
       repoConfig.configurationFileContents = {
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main", "develop", "feature"],
         branches: {
           main: createTestEnvironmentConfig("Production"),
@@ -481,6 +485,7 @@ describe("RepoConfig Component Tests", () => {
       // Arrange
       repoConfig.configurationFileContents = {
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main", "develop"],
         branches: {
           main: createTestEnvironmentConfig("Production"),
@@ -514,6 +519,7 @@ describe("RepoConfig Component Tests", () => {
       repoConfig.selectedBranch = "develop";
       repoConfig.configurationFileContents = {
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main", "develop"],
         branches: {
           main: createTestEnvironmentConfig("Production"),
@@ -529,6 +535,7 @@ describe("RepoConfig Component Tests", () => {
       // Assert
       expect(saveConfigSpy).toHaveBeenCalledWith({
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main"],
         branches: { main: createTestEnvironmentConfig("Production") }
       });
@@ -553,6 +560,7 @@ describe("RepoConfig Component Tests", () => {
       // Arrange
       repoConfig.configurationFileContents = {
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main"],
         branches: {
           main: createTestEnvironmentConfig("Production")
@@ -571,6 +579,7 @@ describe("RepoConfig Component Tests", () => {
       // Assert
       expect(saveConfigSpy).toHaveBeenCalledWith({
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main", "feature"],
         branches: {
           main: createTestEnvironmentConfig("Production"),
@@ -601,6 +610,7 @@ describe("RepoConfig Component Tests", () => {
       repoConfig.selectedBranch = "main";
       repoConfig.configurationFileContents = {
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main"],
         branches: {
           main: createTestEnvironmentConfig("Production")
@@ -626,6 +636,7 @@ describe("RepoConfig Component Tests", () => {
         createTestEnvironmentConfig("Updated Production");
       repoConfig.configurationFileContents = {
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main"],
         branches: {
           main: createTestEnvironmentConfig("Production")
@@ -640,6 +651,7 @@ describe("RepoConfig Component Tests", () => {
       // Assert
       expect(saveConfigSpy).toHaveBeenCalledWith({
         version: "1.0.0",
+        versionControlSystem: "GitHub",
         pipelineOrder: ["main"],
         branches: {
           main: createTestEnvironmentConfig("Updated Production")
@@ -748,6 +760,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         repoConfig.configurationFileContents = {
           version: "1.0.0",
+        versionControlSystem: "GitHub",
           pipelineOrder: ["main", "develop"],
           branches: {
             main: createTestEnvironmentConfig("Production"),
@@ -786,6 +799,7 @@ describe("RepoConfig Component Tests", () => {
         repoConfig.selectedBranch = "main";
         repoConfig.configurationFileContents = {
           version: "1.0.0",
+        versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {
             main: createTestEnvironmentConfig("Production")
@@ -853,6 +867,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         repoConfig.configurationFileContents = {
           version: "1.0.0",
+        versionControlSystem: "GitHub",
           pipelineOrder: ["main", "develop"],
           branches: {
             main: createTestEnvironmentConfig("Production"),
@@ -893,6 +908,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         repoConfig.configurationFileContents = {
           version: "1.0.0",
+        versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {},
           ticketing: {
@@ -922,6 +938,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         repoConfig.configurationFileContents = {
           version: "1.0.0",
+        versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {},
           ticketing: {
@@ -938,6 +955,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         repoConfig.configurationFileContents = {
           version: "1.0.0",
+        versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {},
           ticketing: {
@@ -1017,6 +1035,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         const config = {
           version: "1.0.0",
+        versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {},
           ticketing: {
@@ -1038,6 +1057,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         const config = {
           version: "1.0.0",
+        versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {
             main: createTestEnvironmentConfig("Production")
@@ -1059,6 +1079,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         const config = {
           version: "1.0.0",
+        versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {
             main: createTestEnvironmentConfig("Production"),
@@ -1074,6 +1095,125 @@ describe("RepoConfig Component Tests", () => {
           "main",
           "develop"
         ]);
+      });
+    });
+  });
+
+  describe("Version Control System", () => {
+    beforeEach(() => {
+      repoConfig.configurationFileContents = {
+        version: "1.0.0",
+        versionControlSystem: "GitHub",
+        pipelineOrder: ["main"],
+        branches: {
+          main: createTestEnvironmentConfig("Production")
+        }
+      };
+    });
+
+    describe("versionControlSystemOptions", () => {
+      it("should return GitHub as the only option", () => {
+        // Act
+        const options = repoConfig.versionControlSystemOptions;
+
+        // Assert
+        expect(options).toEqual([{ label: "GitHub", value: "GitHub" }]);
+      });
+    });
+
+    describe("currentVersionControlSystem", () => {
+      it("should return configured version control system", () => {
+        // Act
+        const result = repoConfig.currentVersionControlSystem;
+
+        // Assert
+        expect(result).toBe("GitHub");
+      });
+
+      it("should return GitHub as default when not configured", () => {
+        // Arrange
+        repoConfig.configurationFileContents = undefined;
+
+        // Act
+        const result = repoConfig.currentVersionControlSystem;
+
+        // Assert
+        expect(result).toBe("GitHub");
+      });
+    });
+
+    describe("handleVersionControlSystemChange", () => {
+      it("should update edited version control system", () => {
+        // Arrange
+        const event = {
+          detail: { value: "GitHub" }
+        } as CustomEvent;
+
+        // Act
+        repoConfig.handleVersionControlSystemChange(event);
+
+        // Assert
+        expect(repoConfig.editedVersionControlSystem).toBe("GitHub");
+      });
+    });
+
+    describe("handleEditVersionControlClick", () => {
+      it("should enable editing mode and set current value", () => {
+        // Act
+        repoConfig.handleEditVersionControlClick();
+
+        // Assert
+        expect(repoConfig.isEditingVersionControl).toBe(true);
+        expect(repoConfig.editedVersionControlSystem).toBe("GitHub");
+      });
+    });
+
+    describe("handleSaveVersionControlEdit", () => {
+      it("should save version control system configuration", () => {
+        // Arrange
+        repoConfig.isEditingVersionControl = true;
+        repoConfig.editedVersionControlSystem = "GitHub";
+        const saveConfigSpy = jest.spyOn(repoConfig as any, "saveConfig");
+
+        // Act
+        repoConfig.handleSaveVersionControlEdit();
+
+        // Assert
+        expect(saveConfigSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            versionControlSystem: "GitHub"
+          })
+        );
+        expect(repoConfig.isEditingVersionControl).toBe(false);
+        expect(repoConfig.editedVersionControlSystem).toBeUndefined();
+      });
+
+      it("should not save when no value is set", () => {
+        // Arrange
+        repoConfig.isEditingVersionControl = true;
+        repoConfig.editedVersionControlSystem = undefined;
+        const saveConfigSpy = jest.spyOn(repoConfig as any, "saveConfig");
+
+        // Act
+        repoConfig.handleSaveVersionControlEdit();
+
+        // Assert
+        expect(saveConfigSpy).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("handleCancelVersionControlEdit", () => {
+      it("should cancel editing mode", () => {
+        // Arrange
+        repoConfig.isEditingVersionControl = true;
+        repoConfig.editedVersionControlSystem = "GitHub";
+
+        // Act
+        repoConfig.handleCancelVersionControlEdit();
+
+        // Assert
+        expect(repoConfig.isEditingVersionControl).toBe(false);
+        expect(repoConfig.editedVersionControlSystem).toBeUndefined();
       });
     });
   });

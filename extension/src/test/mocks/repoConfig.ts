@@ -30,6 +30,8 @@ export default class RepoConfig extends LightningElement {
   isEditingTicketing = false;
   editedTicketingConfig?: any;
   showTicketingInfoPanel = false;
+  isEditingVersionControl = false;
+  editedVersionControlSystem?: string;
 
   connectedCallback() {
     this.initializeConfig();
@@ -363,6 +365,35 @@ export default class RepoConfig extends LightningElement {
     this.editedTicketingConfig = undefined;
   }
 
+  handleVersionControlSystemChange(event: CustomEvent) {
+    this.editedVersionControlSystem = event.detail.value;
+  }
+
+  handleEditVersionControlClick() {
+    this.isEditingVersionControl = true;
+    this.editedVersionControlSystem = this.configurationFileContents?.versionControlSystem || "GitHub";
+  }
+
+  handleSaveVersionControlEdit() {
+    if (!this.editedVersionControlSystem || !this.configurationFileContents) {
+      return;
+    }
+
+    const updatedConfig = {
+      ...this.configurationFileContents,
+      versionControlSystem: this.editedVersionControlSystem
+    };
+
+    this.saveConfig(updatedConfig);
+    this.isEditingVersionControl = false;
+    this.editedVersionControlSystem = undefined;
+  }
+
+  handleCancelVersionControlEdit() {
+    this.isEditingVersionControl = false;
+    this.editedVersionControlSystem = undefined;
+  }
+
   getDefaultRegexForSystem(system: string): string {
     switch (system) {
       case "Jira":
@@ -483,6 +514,16 @@ export default class RepoConfig extends LightningElement {
 
   get isOtherTicketingSystem() {
     return this.editedTicketingConfig?.system === "Other";
+  }
+
+  get versionControlSystemOptions() {
+    return [
+      { label: "GitHub", value: "GitHub" }
+    ];
+  }
+
+  get currentVersionControlSystem() {
+    return this.configurationFileContents?.versionControlSystem || "GitHub";
   }
 
   // Mock executeCommand method for testing
