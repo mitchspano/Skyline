@@ -18,37 +18,40 @@
   <div class="slds-p-around_medium slds-text-color_default">
     <lightning-card title="Pipeline">
       <div class="slds-p-around_medium">
-        <div class="slds-grid slds-grid_align-center">
-          <div class="slds-col slds-size_2-of-3">
-            <div class="slds-form-element">
-              <div
-                class="slds-form-element__control slds-input-has-icon slds-input-has-icon_left"
-              >
-                <lightning-icon
-                  icon-name="utility:search"
-                  size="x-small"
-                  class="slds-icon slds-input__icon slds-input__icon_left"
-                ></lightning-icon>
-                <lightning-input
-                  type="text"
-                  label="Search Pull Requests"
-                  value={searchTerm}
-                  onchange={handleTicketIdChange}
-                  placeholder="Enter search term"
-                  variant="label-hidden"
-                ></lightning-input>
+        <!-- Search Bar - Only show when no validation errors -->
+        <template if:false={hasValidationErrors}>
+          <div class="slds-grid slds-grid_align-center">
+            <div class="slds-col slds-size_2-of-3">
+              <div class="slds-form-element">
+                <div
+                  class="slds-form-element__control slds-input-has-icon slds-input-has-icon_left"
+                >
+                  <lightning-icon
+                    icon-name="utility:search"
+                    size="x-small"
+                    class="slds-icon slds-input__icon slds-input__icon_left"
+                  ></lightning-icon>
+                  <lightning-input
+                    type="text"
+                    label="Search Pull Requests"
+                    value={searchTerm}
+                    onchange={handleTicketIdChange}
+                    placeholder="Enter search term"
+                    variant="label-hidden"
+                  ></lightning-input>
+                </div>
+              </div>
+              <div class="slds-align_absolute-center slds-p-top_small">
+                <lightning-button
+                  label="Search"
+                  onclick={handleSearch}
+                  disabled={searchIsDisabled}
+                  variant="brand"
+                ></lightning-button>
               </div>
             </div>
-            <div class="slds-align_absolute-center slds-p-top_small">
-              <lightning-button
-                label="Search"
-                onclick={handleSearch}
-                disabled={searchIsDisabled}
-                variant="brand"
-              ></lightning-button>
-            </div>
           </div>
-        </div>
+        </template>
 
         <template if:true={isLoading}>
           <div class="slds-is-relative slds-p-around_medium">

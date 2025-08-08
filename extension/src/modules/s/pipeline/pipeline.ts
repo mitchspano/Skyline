@@ -17,7 +17,7 @@
 import { track } from "lwc";
 import type { SkylineConfig } from "../../../types/config";
 import CliElement from "../cliElement/cliElement";
-import { ExecuteResult } from "../app/app";
+import { ExecuteResult, Pages } from "../app/app";
 import Toast from "lightning-base-components/src/lightning/toast/toast.js";
 import { marked } from "marked";
 
@@ -98,8 +98,10 @@ export default class Pipeline extends CliElement {
   handleGoToConfiguration() {
     // Navigate to the Project Configuration page
     // This will be handled by the parent component or navigation system
-    const event = new CustomEvent('navigate', {
-      detail: { page: 'repoConfig' }
+    const event = new CustomEvent('pagenavigation', {
+      detail: Pages.repoConfig,
+      bubbles: true,
+      composed: true
     });
     this.dispatchEvent(event);
   }
@@ -423,5 +425,9 @@ export default class Pipeline extends CliElement {
 
   get searchIsDisabled() {
     return !this.searchTerm;
+  }
+
+  get hasValidationErrors(): boolean {
+    return !!(this.configurationError || this.validationError);
   }
 }
