@@ -55,19 +55,10 @@ export class LightningElement {
   }
 }
 
-// Mock track decorator - simple implementation
-export const track = (target: any, propertyKey?: string) => {
-  if (propertyKey) {
-    // Property decorator - make it reactive for testing
-    return {
-      configurable: true,
-      enumerable: true,
-      writable: true
-    };
-  } else {
-    // Class decorator or parameter decorator
-    return (target: any, propertyKey: string) => target;
-  }
+// Mock track decorator - simplified to just be a no-op
+export const track = (target: any, propertyKey: string) => {
+  // Just let the property be defined normally
+  // In real LWC, @track makes properties reactive, but for testing we just need them to be assignable
 };
 
 // Mock api decorator - simple implementation

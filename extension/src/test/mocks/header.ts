@@ -38,7 +38,9 @@ export default class Header extends LightningElement {
     const value = target?.dataset?.page;
     this.dispatchEvent(
       new CustomEvent("pagenavigation", {
-        detail: value
+        detail: value,
+        bubbles: true,
+        composed: true
       })
     );
   }

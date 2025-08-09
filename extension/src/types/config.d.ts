@@ -45,6 +45,7 @@ export interface TicketingSystemConfig {
 
 export interface SkylineConfig {
   version: string;
+  versionControlSystem: string;
   pipelineOrder: string[];
   branches: {
     [branchName: string]: SalesforceEnvironmentConfig;

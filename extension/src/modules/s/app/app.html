@@ -15,11 +15,8 @@
 -->
 
 <template>
-  <div class="container">
-    <s-header
-      onpagenavigation={handlePageNavigation}
-      current-page={currentPage}
-    ></s-header>
+  <div class="container" onpagenavigation={handlePageNavigation}>
+    <s-header current-page={currentPage}></s-header>
     <template lwc:if={showHome}>
       <s-home data-handler="home"></s-home>
     </template>

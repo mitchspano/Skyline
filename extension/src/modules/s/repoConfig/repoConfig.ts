@@ -47,6 +47,8 @@ export default class RepoConfig extends CliElement {
   @track isEditingTicketing = false;
   @track editedTicketingConfig?: TicketingSystemConfig;
   @track showTicketingInfoPanel = false;
+  @track isEditingVersionControl = false;
+  @track editedVersionControlSystem?: string;
 
   private get commands() {
     // Normalize path separators for the current OS
@@ -459,6 +461,36 @@ export default class RepoConfig extends CliElement {
     this.editedTicketingConfig = undefined;
   }
 
+  handleVersionControlSystemChange(event: CustomEvent) {
+    this.editedVersionControlSystem = event.detail.value;
+  }
+
+  handleEditVersionControlClick() {
+    this.isEditingVersionControl = true;
+    this.editedVersionControlSystem =
+      this.configurationFileContents?.versionControlSystem || "GitHub";
+  }
+
+  handleSaveVersionControlEdit() {
+    if (!this.editedVersionControlSystem || !this.configurationFileContents) {
+      return;
+    }
+
+    const updatedConfig = {
+      ...this.configurationFileContents,
+      versionControlSystem: this.editedVersionControlSystem
+    };
+
+    this.saveConfig(updatedConfig);
+    this.isEditingVersionControl = false;
+    this.editedVersionControlSystem = undefined;
+  }
+
+  handleCancelVersionControlEdit() {
+    this.isEditingVersionControl = false;
+    this.editedVersionControlSystem = undefined;
+  }
+
   //  ▂▃▄▅▆▇█▓▒░ Private Methods ░▒▓█▇▆▅▄▃▂
 
   private getDefaultRegexForSystem(system: string): string {
@@ -597,5 +629,13 @@ export default class RepoConfig extends CliElement {
 
   get isOtherTicketingSystem() {
     return this.editedTicketingConfig?.system === "Other";
+  }
+
+  get versionControlSystemOptions() {
+    return [{ label: "GitHub", value: "GitHub" }];
+  }
+
+  get currentVersionControlSystem() {
+    return this.configurationFileContents?.versionControlSystem || "GitHub";
   }
 }
