@@ -71,7 +71,7 @@ export default class Pipeline extends LightningElement {
         this.configurationFileContents = JSON.parse(result.stdout);
         this.orderedBranches =
           this.configurationFileContents?.pipelineOrder || [];
-        
+
         // Mock validation for tests
         this.validateVersionControlSystem();
       } catch (error) {

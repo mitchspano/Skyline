@@ -175,7 +175,7 @@ describe("Pipeline Component Tests", () => {
         command: "cat skyline.config.json",
         stdout: JSON.stringify({
           version: "1.0.0",
-        versionControlSystem: "GitHub",
+          versionControlSystem: "GitHub",
           pipelineOrder: ["main", "develop"],
           branches: {
             main: {
@@ -293,10 +293,10 @@ describe("Pipeline Component Tests", () => {
       expect(pipeline.orderedBranches).toEqual(["main", "develop"]);
     });
 
-      it.skip("should handle invalid JSON in configuration file", () => {
-    // Skipping due to LWC testing framework limitations with @track property assignments
-    // The method logic is correct but property assignments don't work properly in test environment
-  });
+    it.skip("should handle invalid JSON in configuration file", () => {
+      // Skipping due to LWC testing framework limitations with @track property assignments
+      // The method logic is correct but property assignments don't work properly in test environment
+    });
 
     it.skip("should handle missing configuration file", () => {
       // Skipping due to LWC testing framework limitations with @track property assignments

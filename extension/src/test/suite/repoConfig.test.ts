@@ -760,7 +760,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         repoConfig.configurationFileContents = {
           version: "1.0.0",
-        versionControlSystem: "GitHub",
+          versionControlSystem: "GitHub",
           pipelineOrder: ["main", "develop"],
           branches: {
             main: createTestEnvironmentConfig("Production"),
@@ -799,7 +799,7 @@ describe("RepoConfig Component Tests", () => {
         repoConfig.selectedBranch = "main";
         repoConfig.configurationFileContents = {
           version: "1.0.0",
-        versionControlSystem: "GitHub",
+          versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {
             main: createTestEnvironmentConfig("Production")
@@ -867,7 +867,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         repoConfig.configurationFileContents = {
           version: "1.0.0",
-        versionControlSystem: "GitHub",
+          versionControlSystem: "GitHub",
           pipelineOrder: ["main", "develop"],
           branches: {
             main: createTestEnvironmentConfig("Production"),
@@ -908,7 +908,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         repoConfig.configurationFileContents = {
           version: "1.0.0",
-        versionControlSystem: "GitHub",
+          versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {},
           ticketing: {
@@ -938,7 +938,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         repoConfig.configurationFileContents = {
           version: "1.0.0",
-        versionControlSystem: "GitHub",
+          versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {},
           ticketing: {
@@ -955,7 +955,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         repoConfig.configurationFileContents = {
           version: "1.0.0",
-        versionControlSystem: "GitHub",
+          versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {},
           ticketing: {
@@ -1035,7 +1035,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         const config = {
           version: "1.0.0",
-        versionControlSystem: "GitHub",
+          versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {},
           ticketing: {
@@ -1057,7 +1057,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         const config = {
           version: "1.0.0",
-        versionControlSystem: "GitHub",
+          versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {
             main: createTestEnvironmentConfig("Production")
@@ -1079,7 +1079,7 @@ describe("RepoConfig Component Tests", () => {
         // Arrange
         const config = {
           version: "1.0.0",
-        versionControlSystem: "GitHub",
+          versionControlSystem: "GitHub",
           pipelineOrder: ["main"],
           branches: {
             main: createTestEnvironmentConfig("Production"),

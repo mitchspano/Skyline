@@ -20,7 +20,10 @@ import CliElement from "../cliElement/cliElement";
 import { ExecuteResult, Pages } from "../app/app";
 import Toast from "lightning-base-components/src/lightning/toast/toast.js";
 import { marked } from "marked";
-import type { VersionControlSystem, PullRequest as VCSPullRequest } from "../../../types/version-control";
+import type {
+  VersionControlSystem,
+  PullRequest as VCSPullRequest
+} from "../../../types/version-control";
 import { VersionControlSystemFactory } from "./vcs-factory";
 
 const CONFIGURATION_FILE_NAME = "skyline.config.json";
@@ -76,7 +79,7 @@ export default class Pipeline extends CliElement {
   handleGoToConfiguration() {
     // Navigate to the Project Configuration page
     // This will be handled by the parent component or navigation system
-    const event = new CustomEvent('pagenavigation', {
+    const event = new CustomEvent("pagenavigation", {
       detail: Pages.repoConfig,
       bubbles: true,
       composed: true
@@ -110,7 +113,7 @@ export default class Pipeline extends CliElement {
       this.isLoading = true;
       const result = await this.executeCommand(COMMANDS.openConfigurationFile);
       this.handleOpenConfigurationFile(result);
-      
+
       // Initialize version control system and validate after loading configuration
       if (this.configurationFileContents) {
         await this.initializeVersionControlSystem();
@@ -126,7 +129,8 @@ export default class Pipeline extends CliElement {
   handleOpenConfigurationFile(result: ExecuteResult) {
     if (result.errorCode) {
       // Configuration file doesn't exist
-      this.configurationError = "Configuration file 'skyline.config.json' not found. Please configure your project in the Project Configuration page first.";
+      this.configurationError =
+        "Configuration file 'skyline.config.json' not found. Please configure your project in the Project Configuration page first.";
       this.configurationFileContents = undefined;
       return;
     }
@@ -145,30 +149,35 @@ export default class Pipeline extends CliElement {
       }
     } else {
       // No stdout but no error code - this shouldn't happen, but handle it gracefully
-      this.configurationError = "Configuration file 'skyline.config.json' not found. Please configure your project in the Project Configuration page first.";
+      this.configurationError =
+        "Configuration file 'skyline.config.json' not found. Please configure your project in the Project Configuration page first.";
       this.configurationFileContents = undefined;
     }
   }
 
   private async executeSearch(): Promise<void> {
     if (!this.versionControlSystem) {
-      this.handleError("Version control system not initialized", "Search Error");
+      this.handleError(
+        "Version control system not initialized",
+        "Search Error"
+      );
       return;
     }
 
     try {
       this.isLoading = true;
-      const pullRequests = await this.versionControlSystem.searchPullRequests(this.searchTerm);
+      const pullRequests = await this.versionControlSystem.searchPullRequests(
+        this.searchTerm
+      );
       await this.handleSearchResults(pullRequests);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.handleError(errorMessage, "Search Error");
     } finally {
       this.isLoading = false;
     }
   }
-
-
 
   private sanitizeHtml(html: string): string {
     // Basic HTML sanitization - only allow safe tags
@@ -324,17 +333,19 @@ export default class Pipeline extends CliElement {
 
   private async initializeVersionControlSystem(): Promise<void> {
     if (!this.configurationFileContents?.versionControlSystem) {
-      this.validationError = "Version control system not configured. Please configure it in the Project Configuration page.";
+      this.validationError =
+        "Version control system not configured. Please configure it in the Project Configuration page.";
       this.isValidationComplete = false;
       return;
     }
 
     const vcsType = this.configurationFileContents.versionControlSystem;
-    
+
     try {
       // Check if the VCS type is supported
       if (!VersionControlSystemFactory.isSupported(vcsType)) {
-        const supportedSystems = VersionControlSystemFactory.getSupportedSystems().join(", ");
+        const supportedSystems =
+          VersionControlSystemFactory.getSupportedSystems().join(", ");
         this.validationError = `Version control system '${vcsType}' is not supported. Supported systems are: ${supportedSystems}`;
         this.isValidationComplete = false;
         return;
@@ -353,7 +364,8 @@ export default class Pipeline extends CliElement {
         this.executeCommand.bind(this)
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.validationError = `Failed to initialize version control system: ${errorMessage}`;
       this.isValidationComplete = false;
     }
@@ -368,7 +380,8 @@ export default class Pipeline extends CliElement {
 
     try {
       // Validate CLI installation
-      const cliValidation = await this.versionControlSystem.validateCliInstallation();
+      const cliValidation =
+        await this.versionControlSystem.validateCliInstallation();
       if (!cliValidation.isValid) {
         this.validationError = cliValidation.errorMessage;
         this.isValidationComplete = false;
@@ -376,7 +389,8 @@ export default class Pipeline extends CliElement {
       }
 
       // Validate authentication
-      const authValidation = await this.versionControlSystem.validateAuthentication();
+      const authValidation =
+        await this.versionControlSystem.validateAuthentication();
       if (!authValidation.isValid) {
         this.validationError = authValidation.errorMessage;
         this.isValidationComplete = false;
@@ -387,7 +401,8 @@ export default class Pipeline extends CliElement {
       this.isValidationComplete = true;
       this.validationError = undefined;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.validationError = `Failed to validate ${this.versionControlSystem.getName()}: ${errorMessage}`;
       this.isValidationComplete = false;
     }

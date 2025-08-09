@@ -467,7 +467,8 @@ export default class RepoConfig extends CliElement {
 
   handleEditVersionControlClick() {
     this.isEditingVersionControl = true;
-    this.editedVersionControlSystem = this.configurationFileContents?.versionControlSystem || "GitHub";
+    this.editedVersionControlSystem =
+      this.configurationFileContents?.versionControlSystem || "GitHub";
   }
 
   handleSaveVersionControlEdit() {
@@ -631,9 +632,7 @@ export default class RepoConfig extends CliElement {
   }
 
   get versionControlSystemOptions() {
-    return [
-      { label: "GitHub", value: "GitHub" }
-    ];
+    return [{ label: "GitHub", value: "GitHub" }];
   }
 
   get currentVersionControlSystem() {

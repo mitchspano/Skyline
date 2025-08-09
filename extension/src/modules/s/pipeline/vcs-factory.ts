@@ -23,7 +23,7 @@ export type SupportedVCS = "GitHub" | "GitLab" | "Azure DevOps" | "Bitbucket";
 export class VersionControlSystemFactory {
   private static readonly SUPPORTED_SYSTEMS: SupportedVCS[] = [
     "GitHub",
-    "GitLab", 
+    "GitLab",
     "Azure DevOps",
     "Bitbucket"
   ];
@@ -42,23 +42,27 @@ export class VersionControlSystemFactory {
     switch (vcsType) {
       case "GitHub":
         return new GitHubVersionControlSystem(executeCommand);
-      
+
       case "GitLab":
         // Future implementation
         throw new Error("GitLab support is not yet implemented. Coming soon!");
-      
+
       case "Azure DevOps":
-        // Future implementation  
-        throw new Error("Azure DevOps support is not yet implemented. Coming soon!");
-      
+        // Future implementation
+        throw new Error(
+          "Azure DevOps support is not yet implemented. Coming soon!"
+        );
+
       case "Bitbucket":
         // Future implementation
-        throw new Error("Bitbucket support is not yet implemented. Coming soon!");
-      
+        throw new Error(
+          "Bitbucket support is not yet implemented. Coming soon!"
+        );
+
       default:
         throw new Error(
           `Unsupported version control system: ${vcsType}. ` +
-          `Supported systems are: ${this.SUPPORTED_SYSTEMS.join(", ")}`
+            `Supported systems are: ${this.SUPPORTED_SYSTEMS.join(", ")}`
         );
     }
   }

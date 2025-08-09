@@ -371,7 +371,8 @@ export default class RepoConfig extends LightningElement {
 
   handleEditVersionControlClick() {
     this.isEditingVersionControl = true;
-    this.editedVersionControlSystem = this.configurationFileContents?.versionControlSystem || "GitHub";
+    this.editedVersionControlSystem =
+      this.configurationFileContents?.versionControlSystem || "GitHub";
   }
 
   handleSaveVersionControlEdit() {
@@ -517,9 +518,7 @@ export default class RepoConfig extends LightningElement {
   }
 
   get versionControlSystemOptions() {
-    return [
-      { label: "GitHub", value: "GitHub" }
-    ];
+    return [{ label: "GitHub", value: "GitHub" }];
   }
 
   get currentVersionControlSystem() {

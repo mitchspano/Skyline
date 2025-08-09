@@ -75,7 +75,10 @@ export interface VersionControlSystem {
   /**
    * Updates an existing pull request/merge request
    */
-  updatePullRequest(number: number, updates: Partial<ChangeRequest>): Promise<PullRequest>;
+  updatePullRequest(
+    number: number,
+    updates: Partial<ChangeRequest>
+  ): Promise<PullRequest>;
 
   /**
    * Closes a pull request/merge request
