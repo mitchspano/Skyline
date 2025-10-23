@@ -1,0 +1,110 @@
+<!--
+Copyright 2025 Mitch Spano
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<template>
+  <div class="dependencies-container slds-text-color_default">
+    <div class="header">
+      <h1>Salesforce Metadata Dependencies</h1>
+      <template lwc:if={statsText}>
+        <div class="stats">{statsText}</div>
+      </template>
+    </div>
+
+    <template lwc:if={isLoading}>
+      <div class="loading-container">
+        <lightning-spinner
+          alternative-text="Loading dependencies..."
+          size="large"
+        ></lightning-spinner>
+        <p class="loading-text">Querying MetadataComponentDependency...</p>
+      </div>
+    </template>
+
+    <template lwc:if={error}>
+      <div class="error-container">
+        <lightning-icon
+          icon-name="utility:error"
+          size="large"
+          variant="error"
+        ></lightning-icon>
+        <p class="error-text">{error}</p>
+      </div>
+    </template>
+
+    <template lwc:if={hasData}>
+      <div class="controls-section">
+        <div class="search-box">
+          <lightning-input
+            type="search"
+            label="Search Components"
+            placeholder="Search by name or type..."
+            value={searchTerm}
+            onchange={handleSearch}
+          ></lightning-input>
+        </div>
+
+        <div class="controls">
+          <div class="control-group">
+            <lightning-input
+              type="checkbox"
+              label="Enable Clustering"
+              checked={enableClustering}
+              onchange={handleClusteringToggle}
+            ></lightning-input>
+          </div>
+
+          <div class="control-group">
+            <lightning-slider
+              label="Node Size"
+              min="3"
+              max="20"
+              value={nodeSize}
+              onchange={handleNodeSizeChange}
+            ></lightning-slider>
+          </div>
+
+          <div class="control-group">
+            <lightning-slider
+              label="Edge Width"
+              min="0.5"
+              max="5"
+              step="0.1"
+              value={edgeWidth}
+              onchange={handleEdgeWidthChange}
+            ></lightning-slider>
+          </div>
+
+          <div class="control-group">
+            <lightning-combobox
+              label="Show Labels"
+              value={showLabels}
+              options={labelOptions}
+              onchange={handleLabelChange}
+            ></lightning-combobox>
+          </div>
+        </div>
+      </div>
+
+      <div class="visualization-container">
+        <div lwc:ref="graphContainer" class="graph-container"></div>
+      </div>
+
+      <template lwc:if={hasLegend}>
+        <div class="legend" lwc:ref="legendContainer"></div>
+      </template>
+    </template>
+  </div>
+</template>
