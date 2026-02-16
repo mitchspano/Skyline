@@ -52,7 +52,7 @@ jest.mock("../../modules/s/metadataExplorer/sfCli", () => ({
     )
   },
   COMMAND_PREFIX: {
-    sfOrgListMetadata: "sf org list metadata"
+    sfOrgListMetadata: "sf org list metadata --metadata-type"
   }
 }));
 
@@ -203,9 +203,8 @@ describe("MetadataExplorer Component Tests", () => {
     });
   });
 
-  describe("handleMetadataTypeSelection", () => {
+  describe("handleToggle (load type on expand)", () => {
     beforeEach(() => {
-      // Setup metadata types
       metadataExplorer.metadataTypes = {
         status: 0,
         result: {
@@ -235,94 +234,55 @@ describe("MetadataExplorer Component Tests", () => {
       };
     });
 
-    it("should handle standard metadata type selection", async () => {
-      // Arrange
-      const metadataResult: ExecuteResult = {
-        command: "sf org list metadata --metadata-type ApexClass --json",
-        stdout: JSON.stringify({
-          status: 0,
-          result: [
-            {
-              fullName: "TestClass",
-              type: "ApexClass",
-              lastModifiedDate: "2023-01-01"
-            }
-          ]
-        }),
-        stderr: "",
-        elementId: "test",
-        requestId: "test",
-        errorCode: 0
-      };
-
-      mockExecuteCommand.mockResolvedValue(metadataResult);
-
-      // Act
-      await metadataExplorer.handleMetadataTypeSelection({
-        detail: { value: "ApexClass" }
-      } as CustomEvent);
-
-      // Assert
-      expect(metadataExplorer.selectedMetadataType?.xmlName).toBe("ApexClass");
-      expect(
-        metadataExplorer.metadataItemsByType.get("ApexClass")
-      ).toBeDefined();
-    });
-
-    it("should handle folder-based metadata type selection", async () => {
-      // Arrange
-      metadataExplorer.metadataTypes!.result.metadataObjects[0].inFolder = true;
-
-      const folderResult: ExecuteResult = {
-        command:
-          'sf data query --query "SELECT Id, Name, DeveloperName, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName FROM CustomObject ORDER BY Name" --json',
-        stdout: JSON.stringify({
-          status: 0,
-          result: {
-            records: [
-              {
-                Id: "test-id",
-                Name: "Test Object",
-                DeveloperName: "TestObject__c",
-                LastModifiedDate: "2023-01-01",
-                LastModifiedBy: { Name: "Test User" },
-                Folder: { DeveloperName: "Test Folder" }
-              }
-            ]
+    it("should not load again when type is already loaded", async () => {
+      metadataExplorer.metadataItemsByType.set("ApexClass", {
+        status: 0,
+        result: [
+          {
+            fullName: "TestClass",
+            type: "ApexClass",
+            fileName: "TestClass.cls",
+            id: "id",
+            createdById: "",
+            createdByName: "",
+            createdDate: "",
+            lastModifiedById: "",
+            lastModifiedByName: "",
+            lastModifiedDate: "",
+            manageableState: "unmanaged"
           }
-        }),
-        stderr: "",
-        elementId: "test",
-        requestId: "test",
-        errorCode: 0
-      };
+        ],
+        warnings: []
+      });
 
-      mockExecuteCommand.mockResolvedValue(folderResult);
-
-      // Act
-      await metadataExplorer.handleMetadataTypeSelection({
-        detail: { value: "CustomObject" }
+      await metadataExplorer.handleToggle({
+        detail: { name: "ApexClass", isExpanded: true }
       } as CustomEvent);
 
-      // Assert
-      expect(metadataExplorer.selectedMetadataType?.xmlName).toBe(
-        "CustomObject"
-      );
-      expect(
-        metadataExplorer.folderBasedMetadataItems.get("CustomObject")
-      ).toBeDefined();
+      expect(mockExecuteCommand).not.toHaveBeenCalled();
     });
   });
 
-  describe("handleToggle", () => {
+  describe("handleToggle (expand CustomObject item for fields)", () => {
     beforeEach(() => {
-      metadataExplorer.selectedMetadataType = {
-        xmlName: "CustomObject",
-        inFolder: false,
-        childXmlNames: ["CustomField"],
-        directoryName: "objects",
-        metaFile: true,
-        suffix: "object"
+      metadataExplorer.metadataTypes = {
+        status: 0,
+        result: {
+          metadataObjects: [
+            {
+              xmlName: "CustomObject",
+              inFolder: false,
+              childXmlNames: ["CustomField"],
+              directoryName: "objects",
+              metaFile: true,
+              suffix: "object"
+            }
+          ],
+          organizationNamespace: "",
+          partialSaveAllowed: false,
+          testRequired: false
+        },
+        warnings: []
       };
 
       metadataExplorer.metadataItemsByType.set("CustomObject", {
@@ -346,7 +306,7 @@ describe("MetadataExplorer Component Tests", () => {
       });
     });
 
-    it("should handle custom object expansion", async () => {
+    it("should load field definitions when expanding a CustomObject item", async () => {
       // Arrange
       const fieldQueryResult: ExecuteResult = {
         command:
@@ -383,16 +343,12 @@ describe("MetadataExplorer Component Tests", () => {
       expect(mockRefresh).toHaveBeenCalled();
     });
 
-    it("should not execute query for non-custom object types", async () => {
-      // Arrange
-      metadataExplorer.selectedMetadataType!.xmlName = "ApexClass";
-
-      // Act
+    it("should not execute query when expanding non-type, non-SObject row", async () => {
+      // TestClass is an item name, not a metadata type; and not in getSObjectApiNames() unless CustomObject is loaded with that item
       await metadataExplorer.handleToggle({
         detail: { name: "TestClass", isExpanded: true }
       } as CustomEvent);
 
-      // Assert
       expect(mockExecuteCommand).not.toHaveBeenCalled();
     });
 
@@ -635,78 +591,6 @@ describe("MetadataExplorer Component Tests", () => {
 
         // Act & Assert
         expect(metadataExplorer.renderRetrieve).toBe(false);
-      });
-    });
-
-    describe("metadataTypeOptions", () => {
-      it("should return sorted metadata type options", () => {
-        // Arrange
-        metadataExplorer.metadataTypes = {
-          status: 0,
-          result: {
-            metadataObjects: [
-              {
-                xmlName: "CustomObject",
-                directoryName: "objects",
-                inFolder: false,
-                metaFile: true,
-                suffix: "object",
-                childXmlNames: []
-              },
-              {
-                xmlName: "ApexClass",
-                directoryName: "classes",
-                inFolder: false,
-                metaFile: true,
-                suffix: "cls",
-                childXmlNames: []
-              }
-            ],
-            organizationNamespace: "",
-            partialSaveAllowed: false,
-            testRequired: false
-          },
-          warnings: []
-        };
-
-        // Act & Assert
-        expect(metadataExplorer.metadataTypeOptions).toEqual([
-          { label: "ApexClass", value: "ApexClass" },
-          { label: "CustomObject", value: "CustomObject" }
-        ]);
-      });
-
-      it("should return undefined when no metadata types are available", () => {
-        // Arrange
-        metadataExplorer.metadataTypes = undefined;
-
-        // Act & Assert
-        expect(metadataExplorer.metadataTypeOptions).toBeUndefined();
-      });
-    });
-
-    describe("selectedMetadataTypeValue", () => {
-      it("should return the selected metadata type value", () => {
-        // Arrange
-        metadataExplorer.selectedMetadataType = {
-          xmlName: "CustomObject",
-          directoryName: "objects",
-          inFolder: false,
-          metaFile: true,
-          suffix: "object",
-          childXmlNames: []
-        };
-
-        // Act & Assert
-        expect(metadataExplorer.selectedMetadataTypeValue).toBe("CustomObject");
-      });
-
-      it("should return undefined when no metadata type is selected", () => {
-        // Arrange
-        metadataExplorer.selectedMetadataType = undefined;
-
-        // Act & Assert
-        expect(metadataExplorer.selectedMetadataTypeValue).toBeUndefined();
       });
     });
 

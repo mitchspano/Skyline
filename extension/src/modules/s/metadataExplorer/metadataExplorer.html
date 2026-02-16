@@ -47,16 +47,6 @@
         class="slds-p-horizontal_medium"
         slot="actions"
       ></lightning-button-icon-stateful>
-      <template lwc:if={metadataTypeOptions}>
-        <lightning-combobox
-          name="selectedMetadataType"
-          label="Select Metadata Type"
-          value={selectedMetadataTypeValue}
-          options={metadataTypeOptions}
-          onchange={handleMetadataTypeSelection}
-          class="slds-m-around_medium"
-        ></lightning-combobox>
-      </template>
       <template lwc:if={filterState}>
         <lightning-layout horizontal-align="space">
           <lightning-layout-item flexibility="auto" padding="around-small">

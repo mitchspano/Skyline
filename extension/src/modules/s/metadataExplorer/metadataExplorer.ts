@@ -32,7 +32,6 @@ import {
   ListMetadataOfTypeResponse,
   RetrieveMetadataResponse,
   FieldDefinitionResponse,
-  COMMAND_PREFIX,
   COMMANDS,
   FolderBasedMetadataResponse,
   FolderBasedMetadataItem
@@ -51,9 +50,8 @@ const CUSTOM_OBJECT = "CustomObject";
 const STANDARD_FIELD = "StandardField";
 const LAST_MODIFIED_DATE = "lastModifiedDate";
 
-const METADATA_TYPE_COMMAND_REGEX = new RegExp(
-  `${COMMAND_PREFIX.sfOrgListMetadata}\\s+(\\w+)`
-);
+/** Matches the metadata type name in "sf org list metadata --metadata-type <TypeName> ..." */
+const METADATA_TYPE_COMMAND_REGEX = /--metadata-type\s+(\w+)/;
 
 const SYSTEM_FIELDS = [
   // SObject system fields
@@ -96,7 +94,6 @@ export default class MetadataExplorer extends CliElement {
   @track spinnerMessages = new Set<string>();
   @track orgConnectionInfo?: SalesforceConnectionInfo;
   @track metadataTypes?: ListMetadataTypesResponse;
-  @track selectedMetadataType?: MetadataObjectType;
   @track retrieveMetadataResult?: RetrieveMetadataResponse;
   @track metadataItemsByType = new Map<string, ListMetadataOfTypeResponse>();
   @track standardFieldsBySObjectApiName = new Map<
@@ -152,83 +149,107 @@ export default class MetadataExplorer extends CliElement {
   //  ▂▃▄▅▆▇█▓▒░ Event Handlers ░▒▓█▇▆▅▄▃▂
 
   /**
-   * Handles toggling the expansion of a custom object in the tree grid.
-   * Queries and displays the standard fields for the selected custom object.
-   * @param event The custom event containing the name of the custom object.
+   * Handles toggling a row in the tree grid.
+   * When expanding a metadata type row, loads that type's metadata via list metadata.
+   * When expanding a CustomObject item row, loads standard fields for that SObject.
+   * @param event The custom event containing the row name and expansion state.
    */
   async handleToggle(event: CustomEvent) {
-    const sObjectApiName = event.detail.name;
-    if (
-      this.selectedMetadataType?.xmlName !== CUSTOM_OBJECT ||
-      !this.getSObjectApiNames().includes(sObjectApiName) ||
-      !event.detail.isExpanded
-    ) {
+    const { name, isExpanded } = event.detail;
+    if (!isExpanded) {
       return;
     }
-    const command = COMMANDS.queryFieldDefinitions([`'${sObjectApiName}'`]);
+
+    const typeObj = this.getMetadataObjectType(name);
+    if (typeObj) {
+      await this.loadMetadataForType(name);
+      return;
+    }
+
+    if (this.getSObjectApiNames().includes(name)) {
+      const command = COMMANDS.queryFieldDefinitions([`'${name}'`]);
+      try {
+        const result = await this.executeCommandWithSpinner(command);
+        this.handleFieldQuery(result, name);
+        this.refresh();
+      } catch (error) {
+        this.handleError(
+          `Failed to query field definitions for ${name}`,
+          "Error"
+        );
+      }
+    }
+  }
+
+  /**
+   * Returns the MetadataObjectType for a given xmlName, or undefined.
+   */
+  private getMetadataObjectType(
+    xmlName: string
+  ): MetadataObjectType | undefined {
+    return this.metadataTypes?.result.metadataObjects.find(
+      (t) => t.xmlName === xmlName
+    );
+  }
+
+  /**
+   * Loads metadata for a type when the user expands that type row.
+   * Skips if the type is already loaded.
+   */
+  private async loadMetadataForType(typeName: string): Promise<void> {
+    const typeObj = this.getMetadataObjectType(typeName);
+    if (!typeObj) {
+      return;
+    }
+    const alreadyLoaded = typeObj.inFolder
+      ? this.folderBasedMetadataItems.has(typeName)
+      : this.metadataItemsByType.has(typeName);
+    if (alreadyLoaded) {
+      return;
+    }
     try {
-      const result = await this.executeCommandWithSpinner(command);
-      this.handleFieldQuery(result, sObjectApiName);
+      this.ensureStandardFieldInChildTypes(typeObj);
+      if (typeObj.inFolder) {
+        await this.handleFolderBasedMetadata(typeName);
+      } else {
+        await this.handleStandardMetadata(typeName, typeObj);
+      }
       this.refresh();
     } catch (error) {
+      this.spinnerMessages.clear();
       this.handleError(
-        `Failed to query field definitions for ${sObjectApiName}`,
+        `Failed to retrieve metadata for type ${typeName}`,
         "Error"
       );
     }
   }
 
-  /**
-   * Handles the selection of a metadata type from the dropdown.
-   * Retrieves the metadata items for the selected type.
-   * @param event The change event containing the selected metadata type value.
-   */
-  async handleMetadataTypeSelection(event: CustomEvent) {
-    this.resetMetadataItems();
-    this.processedMetadataTypes = [];
-    const selectedType = event.detail.value;
-    this.selectedMetadataType = this.metadataTypes?.result.metadataObjects.find(
-      (type) => type.xmlName === selectedType
-    );
-
-    if (this.selectedMetadataType) {
-      try {
-        if (this.selectedMetadataType.inFolder) {
-          await this.handleFolderBasedMetadata(selectedType);
-        } else {
-          await this.handleStandardMetadata(selectedType);
-        }
-      } catch (error) {
-        this.spinnerMessages.clear();
-        this.handleError(
-          `Failed to retrieve metadata for type ${selectedType}`,
-          "Error"
-        );
-      }
-    }
-
-    this.ensureStandardFieldInChildTypes();
-  }
-
-  private async handleFolderBasedMetadata(selectedType: string): Promise<void> {
+  private async handleFolderBasedMetadata(
+    selectedType: string
+  ): Promise<void> {
     const command = COMMANDS.queryFolderBasedMetadata(selectedType);
     const result = await this.executeCommandWithSpinner(command);
-    this.handleFolderBasedMetadataResponse(result);
+    this.handleFolderBasedMetadataResponse(result, selectedType);
   }
 
-  private async handleStandardMetadata(selectedType: string): Promise<void> {
+  private async handleStandardMetadata(
+    selectedType: string,
+    typeObj: MetadataObjectType
+  ): Promise<void> {
     const command = COMMANDS.listMetadataOfType(selectedType);
     const result = await this.executeCommandWithSpinner(command);
     this.handleMetadataOfType(result);
 
-    if (this.selectedMetadataType?.childXmlNames) {
-      await this.handleChildMetadataTypes();
+    if (typeObj.childXmlNames?.length) {
+      await this.handleChildMetadataTypes(typeObj);
     }
   }
 
-  private async handleChildMetadataTypes(): Promise<void> {
-    const commands = this.selectedMetadataType!.childXmlNames.map(
-      (childMetadataType) => COMMANDS.listMetadataOfType(childMetadataType)
+  private async handleChildMetadataTypes(
+    typeObj: MetadataObjectType
+  ): Promise<void> {
+    const commands = typeObj.childXmlNames.map((childMetadataType) =>
+      COMMANDS.listMetadataOfType(childMetadataType)
     );
     const results = await Promise.all(
       commands.map((command) => this.executeCommandWithSpinner(command))
@@ -236,13 +257,15 @@ export default class MetadataExplorer extends CliElement {
     results.forEach((result) => this.handleMetadataOfType(result));
   }
 
-  private ensureStandardFieldInChildTypes(): void {
+  private ensureStandardFieldInChildTypes(
+    typeObj: MetadataObjectType
+  ): void {
     if (
-      this.selectedMetadataType?.xmlName === CUSTOM_OBJECT &&
-      this.selectedMetadataType?.childXmlNames &&
-      !this.selectedMetadataType.childXmlNames.includes(STANDARD_FIELD)
+      typeObj.xmlName === CUSTOM_OBJECT &&
+      typeObj.childXmlNames &&
+      !typeObj.childXmlNames.includes(STANDARD_FIELD)
     ) {
-      this.selectedMetadataType.childXmlNames.push(STANDARD_FIELD);
+      typeObj.childXmlNames.push(STANDARD_FIELD);
     }
   }
 
@@ -447,7 +470,6 @@ export default class MetadataExplorer extends CliElement {
     this._rowsCacheKey = null;
     this.renderDropdownOptions = false;
     this.selectedRows = undefined;
-    this.selectedMetadataType = undefined;
     this.retrieveMetadataResult = undefined;
     this.metadataItemsByType = new Map<string, ListMetadataOfTypeResponse>();
     this.standardFieldsBySObjectApiName = new Map<
@@ -575,12 +597,13 @@ export default class MetadataExplorer extends CliElement {
    */
   private getChildMetadataTableRows(
     metadataItem: TableRow,
-    childTypeToParentToRows?: Map<string, Map<string, TableRow[]>>
+    childTypeToParentToRows: Map<string, Map<string, TableRow[]>> | undefined,
+    typeObj: MetadataObjectType
   ): TableRow[] | undefined {
-    if (!this.selectedMetadataType?.childXmlNames) {
+    if (!typeObj.childXmlNames?.length) {
       return undefined;
     }
-    const result: TableRow[] = this.selectedMetadataType.childXmlNames.flatMap(
+    const result: TableRow[] = typeObj.childXmlNames.flatMap(
       (childType) => {
         const childTypeRow = this.createChildTypeRow(metadataItem, childType);
         const childMetadataItemRows = this.getChildMetadataItemRows(
@@ -698,13 +721,12 @@ export default class MetadataExplorer extends CliElement {
    * Precomputes child metadata rows grouped by parent sObjectApiName per child type.
    * Avoids filtering the full list per parent in getOtherChildMetadataRows.
    */
-  private buildChildTypeToParentToRows(): Map<
-    string,
-    Map<string, TableRow[]>
-  > {
+  private buildChildTypeToParentToRows(
+    typeObj: MetadataObjectType
+  ): Map<string, Map<string, TableRow[]>> {
     const childTypeToParentToRows = new Map<string, Map<string, TableRow[]>>();
-    const childXmlNames = this.selectedMetadataType?.childXmlNames;
-    if (!childXmlNames) {
+    const childXmlNames = typeObj.childXmlNames;
+    if (!childXmlNames?.length) {
       return childTypeToParentToRows;
     }
     for (const childType of childXmlNames) {
@@ -731,12 +753,14 @@ export default class MetadataExplorer extends CliElement {
   /**
    * Creates child rows for the tree grid. Applies filters and sorts the rows.
    * @param metadataItems The metadata items to create rows for.
+   * @param typeObj The metadata type (for child types and structure).
    * @returns An array of TableRows representing the child metadata items.
    */
   private createChildRows(
-    metadataItems: ListMetadataOfTypeResponse
+    metadataItems: ListMetadataOfTypeResponse,
+    typeObj: MetadataObjectType
   ): TableRow[] {
-    const childTypeToParentToRows = this.buildChildTypeToParentToRows();
+    const childTypeToParentToRows = this.buildChildTypeToParentToRows(typeObj);
     return this.applyTableRowFilters(
       metadataItems.result.map((item) => convertMetadataItemToTableRow(item))
     )
@@ -745,7 +769,8 @@ export default class MetadataExplorer extends CliElement {
         ...child,
         _children: this.getChildMetadataTableRows(
           child,
-          childTypeToParentToRows
+          childTypeToParentToRows,
+          typeObj
         )
       }));
   }
@@ -789,136 +814,135 @@ export default class MetadataExplorer extends CliElement {
   }
 
   /**
-   * Builds a cache key for the rows getter. Returns null when there is no selected type (no rows).
+   * Builds a cache key for the rows getter. Returns null when metadata types are not loaded.
    */
   private buildRowsCacheKey(): string | null {
-    const type = this.selectedMetadataType;
-    if (!type) {
+    if (!this.metadataTypes?.result.metadataObjects?.length) {
       return null;
     }
     const parts = [
       this.refreshView,
-      type.xmlName,
-      type.inFolder ? "1" : "0",
+      this.metadataTypes.result.metadataObjects.length,
       this.searchTermComponentName ?? "",
       this.searchTermFrom ?? "",
       this.searchTermTo ?? "",
       this.searchTermUserName ?? "",
       this.metadataItemsByType.size,
-      this.standardFieldsBySObjectApiName.size
+      this.standardFieldsBySObjectApiName.size,
+      this.folderBasedMetadataItems.size
     ];
-    if (type.inFolder) {
-      parts.push(
-        String(this.folderBasedMetadataItems.get(type.xmlName)?.length ?? 0)
-      );
-    }
     return parts.join("|");
   }
 
   /**
-   * Computes the full rows tree. Used by the rows getter with caching.
+   * Returns true if the type's metadata has been loaded (list metadata or folder query).
+   */
+  private isTypeLoaded(typeObj: MetadataObjectType): boolean {
+    return typeObj.inFolder
+      ? this.folderBasedMetadataItems.has(typeObj.xmlName)
+      : this.metadataItemsByType.has(typeObj.xmlName);
+  }
+
+  /**
+   * Returns child rows for a metadata type row (folder structure or item list).
+   */
+  private getChildrenForType(typeObj: MetadataObjectType): TableRow[] {
+    if (typeObj.inFolder) {
+      const items = this.folderBasedMetadataItems.get(typeObj.xmlName);
+      return items
+        ? this.buildFolderChildrenForType(typeObj.xmlName, items)
+        : [];
+    }
+    const metadataItems = this.metadataItemsByType.get(typeObj.xmlName);
+    return metadataItems
+      ? this.createChildRows(metadataItems, typeObj)
+      : [];
+  }
+
+  /**
+   * Builds the folder-based child rows for a type (folders and unfiled items).
+   */
+  private buildFolderChildrenForType(
+    xmlName: string,
+    items: FolderBasedMetadataItem[]
+  ): TableRow[] {
+    const folderMap = new Map<string, FolderBasedMetadataItem[]>();
+    const unfiledItems: FolderBasedMetadataItem[] = [];
+
+    items.forEach((item) => {
+      if (item.Folder) {
+        const folderName = item.Folder.DeveloperName;
+        if (!folderMap.has(folderName)) {
+          folderMap.set(folderName, []);
+        }
+        folderMap.get(folderName)!.push(item);
+      } else {
+        unfiledItems.push(item);
+      }
+    });
+
+    const children: TableRow[] = [];
+
+    for (const [folderName, folderItems] of folderMap) {
+      children.push({
+        id: `folder_${folderName}`,
+        label: folderName,
+        metadataType: "Folder",
+        type: xmlName,
+        statusIcon: ICONS.complete,
+        _children: folderItems.map((item) =>
+          this.convertFolderBasedMetadataItemToTableRow(item, xmlName)
+        )
+      });
+    }
+
+    if (unfiledItems.length > 0) {
+      children.push({
+        id: "folder_unfiled",
+        label: "Unfiled Public Classic Email Templates",
+        metadataType: "Folder",
+        type: xmlName,
+        statusIcon: ICONS.complete,
+        _children: unfiledItems.map((item) =>
+          this.convertFolderBasedMetadataItemToTableRow(item, xmlName)
+        )
+      });
+    }
+
+    children.sort((a, b) => {
+      if (a.label === "Unfiled Public Classic Email Templates") {
+        return 1;
+      }
+      if (b.label === "Unfiled Public Classic Email Templates") {
+        return -1;
+      }
+      return a.label!.localeCompare(b.label!);
+    });
+
+    return children;
+  }
+
+  /**
+   * Computes the full rows tree. Root rows are all metadata types; expanding a type loads its items.
    */
   private computeRows(): TableRow[] | undefined {
-    if (!this.selectedMetadataType) {
+    const objects = this.metadataTypes?.result.metadataObjects;
+    if (!objects?.length) {
       return undefined;
     }
 
-    if (this.selectedMetadataType.inFolder) {
-      const items = this.folderBasedMetadataItems.get(
-        this.selectedMetadataType.xmlName
-      );
-      if (!items) {
-        return undefined;
-      }
-
-      // Create a map of folders and their items
-      const folderMap = new Map<string, FolderBasedMetadataItem[]>();
-      const unfiledItems: FolderBasedMetadataItem[] = [];
-
-      // Group items by folder
-      items.forEach((item) => {
-        if (item.Folder) {
-          const folderName = item.Folder.DeveloperName;
-          if (!folderMap.has(folderName)) {
-            folderMap.set(folderName, []);
-          }
-          folderMap.get(folderName)!.push(item);
-        } else {
-          unfiledItems.push(item);
-        }
-      });
-
-      // Create the root metadata type row
-      const rootRow: TableRow = {
-        id: this.selectedMetadataType.xmlName,
-        label: this.selectedMetadataType.xmlName,
-        metadataType: this.selectedMetadataType.xmlName,
-        type: this.selectedMetadataType.xmlName,
-        statusIcon: ICONS.complete,
-        _children: []
-      };
-
-      // Add folder rows with their items as children
-      for (const [folderName, folderItems] of folderMap) {
-        const folderRow: TableRow = {
-          id: `folder_${folderName}`,
-          label: folderName,
-          metadataType: "Folder",
-          type: this.selectedMetadataType.xmlName,
-          statusIcon: ICONS.complete,
-          _children: folderItems.map((item) =>
-            this.convertFolderBasedMetadataItemToTableRow(
-              item,
-              this.selectedMetadataType!.xmlName
-            )
-          )
-        };
-        rootRow._children!.push(folderRow);
-      }
-
-      // Add unfiled items under a special folder
-      if (unfiledItems.length > 0) {
-        const unfiledFolderRow: TableRow = {
-          id: "folder_unfiled",
-          label: "Unfiled Public Classic Email Templates",
-          metadataType: "Folder",
-          type: this.selectedMetadataType.xmlName,
-          statusIcon: ICONS.complete,
-          _children: unfiledItems.map((item) =>
-            this.convertFolderBasedMetadataItemToTableRow(
-              item,
-              this.selectedMetadataType!.xmlName
-            )
-          )
-        };
-        rootRow._children!.push(unfiledFolderRow);
-      }
-
-      // Sort folders alphabetically
-      rootRow._children!.sort((a, b) => {
-        // Put "Unfiled Public Classic Email Templates" at the end
-        if (a.label === "Unfiled Public Classic Email Templates") {
-          return 1;
-        }
-        if (b.label === "Unfiled Public Classic Email Templates") {
-          return -1;
-        }
-        return a.label!.localeCompare(b.label!);
-      });
-
-      return [rootRow];
-    }
-
-    const metadataItems = this.metadataItemsByType.get(
-      this.selectedMetadataType.xmlName
+    const sorted = objects.slice().sort((a, b) =>
+      a.xmlName.localeCompare(b.xmlName)
     );
-    return [
-      {
-        ...convertMetadataObjectTypeToTableRow(this.selectedMetadataType),
-        statusIcon: metadataItems ? ICONS.complete : ICONS.loading,
-        _children: metadataItems ? this.createChildRows(metadataItems) : []
-      }
-    ];
+
+    return sorted.map((typeObj) => {
+      const loaded = this.isTypeLoaded(typeObj);
+      return {
+        ...convertMetadataObjectTypeToTableRow(typeObj),
+        statusIcon: loaded ? ICONS.complete : ICONS.loading,
+        _children: this.getChildrenForType(typeObj)
+      };
+    });
   }
 
   /**
@@ -943,24 +967,6 @@ export default class MetadataExplorer extends CliElement {
   }
 
   /**
-   * Getter for the available metadata type options for the dropdown.
-   * @returns An array of objects representing the metadata types, or undefined if none are available.
-   */
-  get metadataTypeOptions(): { label: string; value: string }[] | undefined {
-    return this.metadataTypes?.result.metadataObjects
-      .map((mType) => ({ label: mType.xmlName, value: mType.xmlName }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }
-
-  /**
-   * Getter for the currently selected metadata type value.
-   * @returns The value of the currently selected metadata type, or undefined if none is selected.
-   */
-  get selectedMetadataTypeValue(): string | undefined {
-    return this.selectedMetadataType?.xmlName;
-  }
-
-  /**
    * Formats the spinner display text by joining spinner messages with newlines.
    * Returns undefined if there are no spinner messages.
    */
@@ -971,7 +977,10 @@ export default class MetadataExplorer extends CliElement {
     return this.isDebugMode ? Array.from(this.spinnerMessages) : [];
   }
 
-  private handleFolderBasedMetadataResponse(result: ExecuteResult) {
+  private handleFolderBasedMetadataResponse(
+    result: ExecuteResult,
+    metadataType: string
+  ) {
     if (!result.stdout) {
       this.handleError("No output received from the command", "Error");
       return;
@@ -980,14 +989,10 @@ export default class MetadataExplorer extends CliElement {
     try {
       const response = JSON.parse(result.stdout) as FolderBasedMetadataResponse;
       if (response.status === 0) {
-        const metadataType = this.selectedMetadataType?.xmlName;
-        if (metadataType) {
-          this.folderBasedMetadataItems.set(
-            metadataType,
-            response.result.records
-          );
-          this.refresh();
-        }
+        this.folderBasedMetadataItems.set(
+          metadataType,
+          response.result.records
+        );
       } else {
         this.handleError(
           `Failed to retrieve folder-based metadata: ${
