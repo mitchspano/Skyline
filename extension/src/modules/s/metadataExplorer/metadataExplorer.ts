@@ -34,7 +34,10 @@ import {
   FieldDefinitionResponse,
   COMMANDS,
   FolderBasedMetadataResponse,
-  FolderBasedMetadataItem
+  FolderBasedMetadataItem,
+  ReportRecord,
+  DashboardRecord,
+  DocumentRecord
 } from "./sfCli";
 import {
   ICONS,
@@ -47,6 +50,7 @@ import {
 import CliElement from "../cliElement/cliElement";
 const DEFAULT_TIMEZONE = "America/Los_Angeles";
 const CUSTOM_OBJECT = "CustomObject";
+const UNFILED_FOLDER_LABEL = "Unfiled Public";
 const STANDARD_FIELD = "StandardField";
 const LAST_MODIFIED_DATE = "lastModifiedDate";
 
@@ -105,6 +109,9 @@ export default class MetadataExplorer extends CliElement {
     string,
     FolderBasedMetadataItem[]
   >();
+
+  /** Types that returned 0 items from list metadata; excluded from the tree. */
+  @track typesWithZeroItems: string[] = [];
 
   private _rowsCacheKey: string | null = null;
   private _rowsCacheValue: TableRow[] | undefined;
@@ -194,7 +201,7 @@ export default class MetadataExplorer extends CliElement {
 
   /**
    * Loads metadata for a type when the user expands that type row.
-   * Skips if the type is already loaded.
+   * Skips if the type is already loaded, but still loads child types (e.g. CustomField) if needed.
    */
   private async loadMetadataForType(typeName: string): Promise<void> {
     const typeObj = this.getMetadataObjectType(typeName);
@@ -205,6 +212,18 @@ export default class MetadataExplorer extends CliElement {
       ? this.folderBasedMetadataItems.has(typeName)
       : this.metadataItemsByType.has(typeName);
     if (alreadyLoaded) {
+      if (typeObj.childXmlNames?.length) {
+        try {
+          await this.handleChildMetadataTypes(typeObj);
+          this.refresh();
+        } catch (error) {
+          this.spinnerMessages.clear();
+          this.handleError(
+            `Failed to load child types for ${typeName}`,
+            "Error"
+          );
+        }
+      }
       return;
     }
     try {
@@ -385,18 +404,123 @@ export default class MetadataExplorer extends CliElement {
 
   /**
    * Handles the result of the `sf org list metadata-types` command.
-   * Stores the retrieved metadata types.
+   * Stores the retrieved metadata types and kicks off parallel list metadata for each type.
    * @param result The execution result.
    */
   private handleMetadataTypes(result: ExecuteResult) {
     if (result.stdout) {
-      this.metadataTypes = JSON.parse(result.stdout);
+      const parsed = JSON.parse(
+        result.stdout
+      ) as ListMetadataTypesResponse;
+      this.metadataTypes = parsed;
+      this.loadAllMetadataTypesInParallel(parsed);
     } else if (result.stderr) {
       this.handleError(
         result.stderr,
         "Something went wrong when fetching metadata types"
       );
     }
+  }
+
+  private static readonly METADATA_LOAD_CONCURRENCY = 5;
+
+  /**
+   * Loads list metadata (or folder query) for every metadata type from a queue,
+   * processing up to 5 types at a time (alphabetically) to avoid memory pressure.
+   * Types that return 0 items are removed from the tree (typesWithZeroItems).
+   * @param metadataTypesResponse Parsed list-metadata-types result (passed so the load does not depend on reactive state).
+   */
+  private async loadAllMetadataTypesInParallel(
+    metadataTypesResponse: ListMetadataTypesResponse
+  ): Promise<void> {
+    const objects = metadataTypesResponse?.result?.metadataObjects;
+    if (!objects?.length) {
+      return;
+    }
+    this.typesWithZeroItems = [];
+    this._rowsCacheKey = null;
+
+    objects.forEach((typeObj) => this.ensureStandardFieldInChildTypes(typeObj));
+
+    const queue = objects
+      .slice()
+      .sort((a, b) => a.xmlName.localeCompare(b.xmlName));
+    const concurrency = MetadataExplorer.METADATA_LOAD_CONCURRENCY;
+
+    const worker = async (): Promise<void> => {
+      while (queue.length > 0) {
+        const typeObj = queue.shift();
+        if (!typeObj) {
+          break;
+        }
+        try {
+          await this.loadOneMetadataTypeForInitialLoad(typeObj);
+        } catch (error) {
+          if (this.isDebugMode) {
+            console.warn(
+              `Metadata load failed for ${typeObj.xmlName}:`,
+              error
+            );
+          }
+        }
+      }
+    };
+
+    const workers = Array.from({ length: concurrency }, () => worker());
+    await Promise.all(workers);
+
+    this.refresh();
+  }
+
+  /**
+   * Loads a single metadata type (list metadata or folder query). If the type has 0 items,
+   * adds it to typesWithZeroItems so it is removed from the tree.
+   */
+  private async loadOneMetadataTypeForInitialLoad(
+    typeObj: MetadataObjectType
+  ): Promise<void> {
+    const typeName = typeObj.xmlName;
+    if (typeObj.inFolder) {
+      try {
+        const command = COMMANDS.queryFolderBasedMetadata(typeName);
+        const result = await this.executeCommand(command);
+        if (result.stdout) {
+          const response = JSON.parse(result.stdout);
+          if (response.status === 0) {
+            const rawRecords = response.result?.records ?? [];
+            if (rawRecords.length === 0) {
+              this.typesWithZeroItems = [...this.typesWithZeroItems, typeName];
+            } else {
+              const normalized = this.normalizeFolderBasedRecords(
+                rawRecords,
+                typeName
+              );
+              this.folderBasedMetadataItems.set(typeName, normalized);
+            }
+          }
+        }
+      } catch {
+        // Leave type visible on error (unsupported folder type or parse error)
+      }
+    } else {
+      const command = COMMANDS.listMetadataOfType(typeName);
+      const result = await this.executeCommand(command);
+      if (result.stdout) {
+        try {
+          const parsed = JSON.parse(result.stdout) as ListMetadataOfTypeResponse;
+          const items = parsed.result ?? [];
+          if (items.length === 0) {
+            this.typesWithZeroItems = [...this.typesWithZeroItems, typeName];
+          } else {
+            this.processedMetadataTypes.push(typeName);
+            this.metadataItemsByType.set(typeName, parsed);
+          }
+        } catch {
+          // Leave type visible on parse error
+        }
+      }
+    }
+    this.refresh();
   }
 
   /**
@@ -410,12 +534,22 @@ export default class MetadataExplorer extends CliElement {
       if (!selectedMetadataType) {
         return;
       }
-      this.processedMetadataTypes.push(selectedMetadataType);
-      const metadataOfSelectedType = JSON.parse(result.stdout);
-      this.metadataItemsByType.set(
-        selectedMetadataType,
-        metadataOfSelectedType
-      );
+      const metadataOfSelectedType = JSON.parse(
+        result.stdout
+      ) as ListMetadataOfTypeResponse;
+      const items = metadataOfSelectedType.result ?? [];
+      if (items.length === 0) {
+        this.typesWithZeroItems = [
+          ...this.typesWithZeroItems,
+          selectedMetadataType
+        ];
+      } else {
+        this.processedMetadataTypes.push(selectedMetadataType);
+        this.metadataItemsByType.set(
+          selectedMetadataType,
+          metadataOfSelectedType
+        );
+      }
     } else if (result.stderr) {
       this.handleError(
         result.stderr,
@@ -829,7 +963,9 @@ export default class MetadataExplorer extends CliElement {
       this.searchTermUserName ?? "",
       this.metadataItemsByType.size,
       this.standardFieldsBySObjectApiName.size,
-      this.folderBasedMetadataItems.size
+      this.folderBasedMetadataItems.size,
+      this.typesWithZeroItems.length,
+      this.typesWithZeroItems.slice().sort().join(",")
     ];
     return parts.join("|");
   }
@@ -899,7 +1035,7 @@ export default class MetadataExplorer extends CliElement {
     if (unfiledItems.length > 0) {
       children.push({
         id: "folder_unfiled",
-        label: "Unfiled Public Classic Email Templates",
+        label: UNFILED_FOLDER_LABEL,
         metadataType: "Folder",
         type: xmlName,
         statusIcon: ICONS.complete,
@@ -910,10 +1046,10 @@ export default class MetadataExplorer extends CliElement {
     }
 
     children.sort((a, b) => {
-      if (a.label === "Unfiled Public Classic Email Templates") {
+      if (a.label === UNFILED_FOLDER_LABEL) {
         return 1;
       }
-      if (b.label === "Unfiled Public Classic Email Templates") {
+      if (b.label === UNFILED_FOLDER_LABEL) {
         return -1;
       }
       return a.label!.localeCompare(b.label!);
@@ -923,7 +1059,8 @@ export default class MetadataExplorer extends CliElement {
   }
 
   /**
-   * Computes the full rows tree. Root rows are all metadata types; expanding a type loads its items.
+   * Computes the full rows tree. Root rows are metadata types that have items (or are still loading).
+   * Types that returned 0 items from list metadata are excluded.
    */
   private computeRows(): TableRow[] | undefined {
     const objects = this.metadataTypes?.result.metadataObjects;
@@ -931,9 +1068,11 @@ export default class MetadataExplorer extends CliElement {
       return undefined;
     }
 
-    const sorted = objects.slice().sort((a, b) =>
-      a.xmlName.localeCompare(b.xmlName)
-    );
+    const zeroSet = new Set(this.typesWithZeroItems);
+    const sorted = objects
+      .filter((typeObj) => !zeroSet.has(typeObj.xmlName))
+      .slice()
+      .sort((a, b) => a.xmlName.localeCompare(b.xmlName));
 
     return sorted.map((typeObj) => {
       const loaded = this.isTypeLoaded(typeObj);
@@ -987,12 +1126,18 @@ export default class MetadataExplorer extends CliElement {
     }
 
     try {
-      const response = JSON.parse(result.stdout) as FolderBasedMetadataResponse;
+      const response = JSON.parse(result.stdout);
       if (response.status === 0) {
-        this.folderBasedMetadataItems.set(
-          metadataType,
-          response.result.records
-        );
+        const rawRecords = response.result?.records ?? [];
+        if (rawRecords.length === 0) {
+          this.typesWithZeroItems = [...this.typesWithZeroItems, metadataType];
+        } else {
+          const normalized = this.normalizeFolderBasedRecords(
+            rawRecords,
+            metadataType
+          );
+          this.folderBasedMetadataItems.set(metadataType, normalized);
+        }
       } else {
         this.handleError(
           `Failed to retrieve folder-based metadata: ${
@@ -1006,6 +1151,64 @@ export default class MetadataExplorer extends CliElement {
         `Failed to parse folder-based metadata response: ${error}`,
         "Error"
       );
+    }
+  }
+
+  /**
+   * Normalizes raw SOQL records from different folder-based types into
+   * the common FolderBasedMetadataItem shape.
+   *
+   * - EmailTemplate & Document: already have Folder.DeveloperName
+   * - Report: has FolderName (label, used as folder dev name) and OwnerId
+   * - Dashboard: has FolderName (label) and FolderId; uses Title for display name
+   */
+  private normalizeFolderBasedRecords(
+    rawRecords: any[],
+    metadataType: string
+  ): FolderBasedMetadataItem[] {
+    switch (metadataType) {
+      case "Report":
+        return rawRecords.map((r: ReportRecord) => ({
+          Id: r.Id,
+          Name: r.Name,
+          DeveloperName: r.DeveloperName,
+          NamespacePrefix: r.NamespacePrefix,
+          LastModifiedDate: r.LastModifiedDate,
+          LastModifiedBy: r.LastModifiedBy ?? null,
+          Folder:
+            r.FolderName && r.FolderName !== "null"
+              ? { DeveloperName: r.FolderName }
+              : null,
+          FolderId: r.OwnerId
+        }));
+      case "Dashboard":
+        return rawRecords.map((r: DashboardRecord) => ({
+          Id: r.Id,
+          Name: r.Title ?? r.DeveloperName,
+          DeveloperName: r.DeveloperName,
+          NamespacePrefix: r.NamespacePrefix,
+          LastModifiedDate: r.LastModifiedDate,
+          LastModifiedBy: null,
+          Folder:
+            r.FolderName && r.FolderName !== "null"
+              ? { DeveloperName: r.FolderName }
+              : null,
+          FolderId: r.FolderId
+        }));
+      case "Document":
+        return rawRecords.map((r: DocumentRecord) => ({
+          Id: r.Id,
+          Name: r.Name,
+          DeveloperName: r.DeveloperName,
+          NamespacePrefix: r.NamespacePrefix,
+          LastModifiedDate: r.LastModifiedDate,
+          LastModifiedBy: r.LastModifiedBy ?? null,
+          Folder: r.Folder ?? null,
+          FolderId: r.FolderId
+        }));
+      default:
+        // EmailTemplate and any future types that already match the interface
+        return rawRecords as FolderBasedMetadataItem[];
     }
   }
 

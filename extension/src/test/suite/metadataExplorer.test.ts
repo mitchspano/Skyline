@@ -46,10 +46,20 @@ jest.mock("../../modules/s/metadataExplorer/sfCli", () => ({
       (metadataItems: string[]) =>
         `sf project retrieve start --metadata ${metadataItems.join(",")} --json`
     ),
-    queryFolderBasedMetadata: jest.fn(
-      (type: string) =>
-        `sf data query --query "SELECT Id, Name, DeveloperName, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName FROM ${type} ORDER BY Name" --json`
-    )
+    queryFolderBasedMetadata: jest.fn((type: string) => {
+      switch (type) {
+        case "EmailTemplate":
+          return `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName, Folder.NamespacePrefix, FolderId FROM EmailTemplate" --json`;
+        case "Report":
+          return `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, FolderName, OwnerId FROM Report ORDER BY Name" --json`;
+        case "Dashboard":
+          return `sf data query --query "SELECT Id, Title, DeveloperName, NamespacePrefix, LastModifiedDate, FolderName, FolderId FROM Dashboard ORDER BY Title" --json`;
+        case "Document":
+          return `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName, FolderId FROM Document ORDER BY Name" --json`;
+        default:
+          throw new Error(`Unsupported folder-based metadata type: ${type}`);
+      }
+    })
   },
   COMMAND_PREFIX: {
     sfOrgListMetadata: "sf org list metadata --metadata-type"

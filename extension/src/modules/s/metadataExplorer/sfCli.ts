@@ -32,7 +32,10 @@ export const COMMAND_PREFIX = {
   sfOrgListMetadata: `sf org list metadata --metadata-type`,
   sfProjectRetrieveStart: `sf project retrieve start`,
   sfDataQueryFieldDefinitions: `sf data query --query "SELECT QualifiedApiName, LastModifiedDate, LastModifiedBy.Name, Id FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN `,
-  sfDataQueryEmailTemplates: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName, Folder.NamespacePrefix, FolderId FROM EmailTemplate"`
+  sfDataQueryEmailTemplates: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName, Folder.NamespacePrefix, FolderId FROM EmailTemplate"`,
+  sfDataQueryReports: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, FolderName, OwnerId FROM Report ORDER BY Name"`,
+  sfDataQueryDashboards: `sf data query --query "SELECT Id, Title, DeveloperName, NamespacePrefix, LastModifiedDate, FolderName, FolderId FROM Dashboard ORDER BY Title"`,
+  sfDataQueryDocuments: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName, FolderId FROM Document ORDER BY Name"`
 };
 
 /**
@@ -87,6 +90,12 @@ export const COMMANDS = {
     switch (metadataType) {
       case "EmailTemplate":
         return `${COMMAND_PREFIX.sfDataQueryEmailTemplates} ${JSON_FLAG}`;
+      case "Report":
+        return `${COMMAND_PREFIX.sfDataQueryReports} ${JSON_FLAG}`;
+      case "Dashboard":
+        return `${COMMAND_PREFIX.sfDataQueryDashboards} ${JSON_FLAG}`;
+      case "Document":
+        return `${COMMAND_PREFIX.sfDataQueryDocuments} ${JSON_FLAG}`;
       default:
         throw new Error(
           `Unsupported folder-based metadata type: ${metadataType}`
@@ -274,6 +283,12 @@ interface User {
   Name?: string;
 }
 
+/**
+ * Normalized representation of a folder-based metadata item.
+ * Different types (EmailTemplate, Report, Dashboard, Document) have
+ * varying SOQL shapes; they are normalized into this interface in
+ * metadataExplorer.ts after the query returns.
+ */
 export interface FolderBasedMetadataItem {
   Id: string;
   Name: string;
@@ -282,11 +297,53 @@ export interface FolderBasedMetadataItem {
   LastModifiedDate: string;
   LastModifiedBy: {
     Name: string;
-  };
+  } | null;
   Folder: {
     DeveloperName: string;
     NamespacePrefix?: string;
   } | null;
+  FolderId: string;
+}
+
+/**
+ * Raw record shape returned by SOQL for a Report.
+ */
+export interface ReportRecord {
+  Id: string;
+  Name: string;
+  DeveloperName: string;
+  NamespacePrefix?: string;
+  LastModifiedDate: string;
+  LastModifiedBy?: { Name: string } | null;
+  FolderName: string;
+  OwnerId: string;
+}
+
+/**
+ * Raw record shape returned by SOQL for a Dashboard.
+ * Note: Dashboard uses "Title" for display name, not "Name".
+ */
+export interface DashboardRecord {
+  Id: string;
+  Title: string;
+  DeveloperName: string;
+  NamespacePrefix?: string;
+  LastModifiedDate: string;
+  FolderName: string;
+  FolderId: string;
+}
+
+/**
+ * Raw record shape returned by SOQL for a Document.
+ */
+export interface DocumentRecord {
+  Id: string;
+  Name: string;
+  DeveloperName: string;
+  NamespacePrefix?: string;
+  LastModifiedDate: string;
+  LastModifiedBy?: { Name: string } | null;
+  Folder: { DeveloperName: string } | null;
   FolderId: string;
 }
 
