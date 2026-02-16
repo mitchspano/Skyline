@@ -51,6 +51,10 @@ const CUSTOM_OBJECT = "CustomObject";
 const STANDARD_FIELD = "StandardField";
 const LAST_MODIFIED_DATE = "lastModifiedDate";
 
+const METADATA_TYPE_COMMAND_REGEX = new RegExp(
+  `${COMMAND_PREFIX.sfOrgListMetadata}\\s+(\\w+)`
+);
+
 const SYSTEM_FIELDS = [
   // SObject system fields
   "Id",
@@ -104,6 +108,9 @@ export default class MetadataExplorer extends CliElement {
     string,
     FolderBasedMetadataItem[]
   >();
+
+  private _rowsCacheKey: string | null = null;
+  private _rowsCacheValue: TableRow[] | undefined;
 
   /**
    * Called when the component is connected to the DOM.
@@ -423,7 +430,7 @@ export default class MetadataExplorer extends CliElement {
     if (result.stdout) {
       const queryResult = JSON.parse(result.stdout);
       this.standardFieldsBySObjectApiName.set(sObjectApiName, queryResult);
-      this.refresh();
+      // Caller (handleToggle) already calls refresh()
     } else if (result.stderr) {
       this.handleError(
         result.stderr,
@@ -437,6 +444,7 @@ export default class MetadataExplorer extends CliElement {
    * Clears selections, results, and collapses the tree grid.
    */
   private resetMetadataItems() {
+    this._rowsCacheKey = null;
     this.renderDropdownOptions = false;
     this.selectedRows = undefined;
     this.selectedMetadataType = undefined;
@@ -470,16 +478,8 @@ export default class MetadataExplorer extends CliElement {
    * @returns The extracted metadata type or undefined if not found.
    */
   private extractMetadataType(command: string): string | undefined {
-    const metadataPrefixRegex = new RegExp(
-      COMMAND_PREFIX.sfOrgListMetadata + "\\s+(\\w+)"
-    );
-    const match = command.match(metadataPrefixRegex);
-
-    if (match && match.length > 1) {
-      return match[1];
-    }
-
-    return undefined;
+    const match = command.match(METADATA_TYPE_COMMAND_REGEX);
+    return match?.[1];
   }
 
   /**
@@ -570,10 +570,12 @@ export default class MetadataExplorer extends CliElement {
   /**
    * Creates child metadata table rows for the given metadata item.
    * @param metadataItem The parent metadata item.
+   * @param childTypeToParentToRows Optional precomputed map of child type -> parent fullName -> rows.
    * @returns An array of child metadata table rows, or undefined if none exist.
    */
   private getChildMetadataTableRows(
-    metadataItem: TableRow
+    metadataItem: TableRow,
+    childTypeToParentToRows?: Map<string, Map<string, TableRow[]>>
   ): TableRow[] | undefined {
     if (!this.selectedMetadataType?.childXmlNames) {
       return undefined;
@@ -583,7 +585,8 @@ export default class MetadataExplorer extends CliElement {
         const childTypeRow = this.createChildTypeRow(metadataItem, childType);
         const childMetadataItemRows = this.getChildMetadataItemRows(
           metadataItem,
-          childType
+          childType,
+          childTypeToParentToRows
         );
         if (childMetadataItemRows && childMetadataItemRows.length > 0) {
           childTypeRow._children = childMetadataItemRows;
@@ -617,17 +620,22 @@ export default class MetadataExplorer extends CliElement {
    * Retrieves child metadata item rows for a given parent metadata item and child type.
    * @param metadataItem The parent metadata item.
    * @param childType The XML name of the child metadata type.
+   * @param childTypeToParentToRows Optional precomputed map for non–standard-field child types.
    * @returns An array of TableRows representing the child metadata items, or undefined if none are found.
    */
   private getChildMetadataItemRows(
     metadataItem: TableRow,
-    childType: string
+    childType: string,
+    childTypeToParentToRows?: Map<string, Map<string, TableRow[]>>
   ): TableRow[] | undefined {
     if (childType === STANDARD_FIELD) {
       return this.getStandardFieldRows(metadataItem);
-    } else {
-      return this.getOtherChildMetadataRows(metadataItem, childType);
     }
+    return this.getOtherChildMetadataRows(
+      metadataItem,
+      childType,
+      childTypeToParentToRows
+    );
   }
 
   /**
@@ -658,19 +666,25 @@ export default class MetadataExplorer extends CliElement {
 
   /**
    * Retrieves child metadata rows for types other than standard fields.
+   * Uses precomputed map when provided to avoid filtering the full list per parent.
    * @param metadataItem The parent metadata item.
    * @param childType The XML name of the child metadata type.
+   * @param childTypeToParentToRows Optional precomputed map from createChildRows.
    * @returns An array of TableRows representing the child metadata items, or undefined if none are found.
    */
   private getOtherChildMetadataRows(
     metadataItem: TableRow,
-    childType: string
+    childType: string,
+    childTypeToParentToRows?: Map<string, Map<string, TableRow[]>>
   ): TableRow[] | undefined {
+    const byParent = childTypeToParentToRows?.get(childType);
+    if (byParent !== undefined) {
+      return byParent.get(metadataItem.fullName ?? "") ?? undefined;
+    }
     const childMetadataItems = this.metadataItemsByType.get(childType);
     if (!childMetadataItems) {
       return undefined;
     }
-
     return this.applyTableRowFilters(
       childMetadataItems.result.map((item) =>
         convertMetadataItemToTableRow(item)
@@ -681,6 +695,40 @@ export default class MetadataExplorer extends CliElement {
   }
 
   /**
+   * Precomputes child metadata rows grouped by parent sObjectApiName per child type.
+   * Avoids filtering the full list per parent in getOtherChildMetadataRows.
+   */
+  private buildChildTypeToParentToRows(): Map<
+    string,
+    Map<string, TableRow[]>
+  > {
+    const childTypeToParentToRows = new Map<string, Map<string, TableRow[]>>();
+    const childXmlNames = this.selectedMetadataType?.childXmlNames;
+    if (!childXmlNames) {
+      return childTypeToParentToRows;
+    }
+    for (const childType of childXmlNames) {
+      if (childType === STANDARD_FIELD) continue;
+      const childMetadataItems = this.metadataItemsByType.get(childType);
+      if (!childMetadataItems) continue;
+      const rows = this.applyTableRowFilters(
+        childMetadataItems.result.map((item) => convertMetadataItemToTableRow(item))
+      );
+      const byParent = new Map<string, TableRow[]>();
+      for (const row of rows) {
+        const key = row.sObjectApiName ?? "";
+        if (!byParent.has(key)) byParent.set(key, []);
+        byParent.get(key)!.push(row);
+      }
+      byParent.forEach((arr) =>
+        arr.sort((a, b) => a.fullName!.localeCompare(b.fullName!))
+      );
+      childTypeToParentToRows.set(childType, byParent);
+    }
+    return childTypeToParentToRows;
+  }
+
+  /**
    * Creates child rows for the tree grid. Applies filters and sorts the rows.
    * @param metadataItems The metadata items to create rows for.
    * @returns An array of TableRows representing the child metadata items.
@@ -688,13 +736,17 @@ export default class MetadataExplorer extends CliElement {
   private createChildRows(
     metadataItems: ListMetadataOfTypeResponse
   ): TableRow[] {
+    const childTypeToParentToRows = this.buildChildTypeToParentToRows();
     return this.applyTableRowFilters(
       metadataItems.result.map((item) => convertMetadataItemToTableRow(item))
     )
       .sort((a, b) => a.fullName!.localeCompare(b.fullName!))
       .map((child) => ({
         ...child,
-        _children: this.getChildMetadataTableRows(child)
+        _children: this.getChildMetadataTableRows(
+          child,
+          childTypeToParentToRows
+        )
       }));
   }
 
@@ -722,9 +774,51 @@ export default class MetadataExplorer extends CliElement {
   /**
    * Getter for the main table rows.  Constructs the hierarchical
    * data structure for the lightning-tree-grid component.
+   * Result is cached and invalidated when filters, type, or underlying data change.
    * @returns An array of TableRows representing the root level of the metadata tree.
    */
   get rows(): TableRow[] | undefined {
+    const cacheKey = this.buildRowsCacheKey();
+    if (cacheKey !== null && cacheKey === this._rowsCacheKey) {
+      return this._rowsCacheValue;
+    }
+    const value = this.computeRows();
+    this._rowsCacheKey = cacheKey;
+    this._rowsCacheValue = value;
+    return value;
+  }
+
+  /**
+   * Builds a cache key for the rows getter. Returns null when there is no selected type (no rows).
+   */
+  private buildRowsCacheKey(): string | null {
+    const type = this.selectedMetadataType;
+    if (!type) {
+      return null;
+    }
+    const parts = [
+      this.refreshView,
+      type.xmlName,
+      type.inFolder ? "1" : "0",
+      this.searchTermComponentName ?? "",
+      this.searchTermFrom ?? "",
+      this.searchTermTo ?? "",
+      this.searchTermUserName ?? "",
+      this.metadataItemsByType.size,
+      this.standardFieldsBySObjectApiName.size
+    ];
+    if (type.inFolder) {
+      parts.push(
+        String(this.folderBasedMetadataItems.get(type.xmlName)?.length ?? 0)
+      );
+    }
+    return parts.join("|");
+  }
+
+  /**
+   * Computes the full rows tree. Used by the rows getter with caching.
+   */
+  private computeRows(): TableRow[] | undefined {
     if (!this.selectedMetadataType) {
       return undefined;
     }
