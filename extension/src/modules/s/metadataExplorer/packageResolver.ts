@@ -217,7 +217,10 @@ export function classifyMetadataItem(
 
   // 2. Component was installed from a package
   if (INSTALLED_STATES.has(state)) {
-    const ns = extractNamespaceFromFullName(item.fullName, index.knownNamespaces);
+    const ns = extractNamespaceFromFullName(
+      item.fullName,
+      index.knownNamespaces
+    );
     if (ns) {
       const packages = index.packagesByNamespace.get(ns);
       if (packages && packages.length === 1) {
@@ -325,7 +328,9 @@ export function classifyFolderBasedItem(
   }
 
   // No namespace — check manageableState for installed status
-  const state = ((item as FolderBasedMetadataItemWithState).ManageableState || "").toLowerCase();
+  const state = (
+    (item as FolderBasedMetadataItemWithState).ManageableState || ""
+  ).toLowerCase();
   if (INSTALLED_STATES.has(state)) {
     return resolveNoNamespaceInstalledItem(index);
   }

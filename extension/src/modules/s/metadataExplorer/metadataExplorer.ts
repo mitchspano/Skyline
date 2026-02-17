@@ -284,9 +284,7 @@ export default class MetadataExplorer extends CliElement {
     }
   }
 
-  private async handleFolderBasedMetadata(
-    selectedType: string
-  ): Promise<void> {
+  private async handleFolderBasedMetadata(selectedType: string): Promise<void> {
     const command = COMMANDS.queryFolderBasedMetadata(selectedType);
     const result = await this.executeCommandWithSpinner(command);
     this.handleFolderBasedMetadataResponse(result, selectedType);
@@ -317,9 +315,7 @@ export default class MetadataExplorer extends CliElement {
     results.forEach((result) => this.handleMetadataOfType(result));
   }
 
-  private ensureStandardFieldInChildTypes(
-    typeObj: MetadataObjectType
-  ): void {
+  private ensureStandardFieldInChildTypes(typeObj: MetadataObjectType): void {
     if (
       typeObj.xmlName === CUSTOM_OBJECT &&
       typeObj.childXmlNames &&
@@ -450,9 +446,7 @@ export default class MetadataExplorer extends CliElement {
    */
   private handleMetadataTypes(result: ExecuteResult) {
     if (result.stdout) {
-      const parsed = JSON.parse(
-        result.stdout
-      ) as ListMetadataTypesResponse;
+      const parsed = JSON.parse(result.stdout) as ListMetadataTypesResponse;
       this.metadataTypes = parsed;
       const orgNamespace = parsed.result?.organizationNamespace ?? "";
       Promise.all([
@@ -507,10 +501,7 @@ export default class MetadataExplorer extends CliElement {
           await this.loadOneMetadataTypeForInitialLoad(typeObj);
         } catch (error) {
           if (this.isDebugMode) {
-            console.warn(
-              `Metadata load failed for ${typeObj.xmlName}:`,
-              error
-            );
+            console.warn(`Metadata load failed for ${typeObj.xmlName}:`, error);
           }
         }
         this.trackTypeCompleted(typeObj.xmlName);
@@ -536,7 +527,6 @@ export default class MetadataExplorer extends CliElement {
       (t) => t !== typeName
     );
   }
-
 
   /**
    * Loads a single metadata type (list metadata or folder query). If the type has 0 items,
@@ -574,7 +564,9 @@ export default class MetadataExplorer extends CliElement {
       const result = await this.executeCommand(command);
       if (result.stdout) {
         try {
-          const parsed = JSON.parse(result.stdout) as ListMetadataOfTypeResponse;
+          const parsed = JSON.parse(
+            result.stdout
+          ) as ListMetadataOfTypeResponse;
           const items = parsed.result ?? [];
           if (items.length === 0) {
             this.typesWithZeroItems = [...this.typesWithZeroItems, typeName];
@@ -868,22 +860,20 @@ export default class MetadataExplorer extends CliElement {
     if (!typeObj.childXmlNames?.length) {
       return undefined;
     }
-    const result: TableRow[] = typeObj.childXmlNames.flatMap(
-      (childType) => {
-        const childTypeRow = this.createChildTypeRow(metadataItem, childType);
-        const childMetadataItemRows = this.getChildMetadataItemRows(
-          metadataItem,
-          childType,
-          childTypeToParentToRows
-        );
-        if (childMetadataItemRows && childMetadataItemRows.length > 0) {
-          childTypeRow._children = childMetadataItemRows;
-          childTypeRow.statusIcon = ICONS.complete;
-          return childTypeRow;
-        }
-        return [];
+    const result: TableRow[] = typeObj.childXmlNames.flatMap((childType) => {
+      const childTypeRow = this.createChildTypeRow(metadataItem, childType);
+      const childMetadataItemRows = this.getChildMetadataItemRows(
+        metadataItem,
+        childType,
+        childTypeToParentToRows
+      );
+      if (childMetadataItemRows && childMetadataItemRows.length > 0) {
+        childTypeRow._children = childMetadataItemRows;
+        childTypeRow.statusIcon = ICONS.complete;
+        return childTypeRow;
       }
-    );
+      return [];
+    });
     return result.length > 0 ? result : undefined;
   }
 
@@ -1347,10 +1337,7 @@ export default class MetadataExplorer extends CliElement {
       items: MetadataItem[];
       folderItems: FolderBasedMetadataItem[];
     };
-    const tree = new Map<
-      string,
-      Map<string, Map<string, TypeBucket>>
-    >();
+    const tree = new Map<string, Map<string, Map<string, TypeBucket>>>();
     const packageTypeLabels = new Map<string, Map<string, string>>();
 
     const ensureBucket = (
@@ -1401,8 +1388,7 @@ export default class MetadataExplorer extends CliElement {
       }
     }
 
-    const localLabel =
-      this.packageIndex.orgNamespace || LOCAL_NAMESPACE_LABEL;
+    const localLabel = this.packageIndex.orgNamespace || LOCAL_NAMESPACE_LABEL;
 
     const namespaceRows: TableRow[] = [];
     const sortedNamespaces = Array.from(tree.keys()).sort((a, b) => {
@@ -1451,7 +1437,13 @@ export default class MetadataExplorer extends CliElement {
             children = this.createChildRows(bucket.items, typeObj);
           }
 
-          this.propagateFieldsToChildren(children, nsKey, displayPkgName, pkgType, typeName);
+          this.propagateFieldsToChildren(
+            children,
+            nsKey,
+            displayPkgName,
+            pkgType,
+            typeName
+          );
 
           typeRows.push({
             ...convertMetadataObjectTypeToTableRow(typeObj),
@@ -1492,8 +1484,7 @@ export default class MetadataExplorer extends CliElement {
     nsKey: string,
     pkgTypeLabels: Map<string, string>
   ): string {
-    const localLabel =
-      this.packageIndex?.orgNamespace || LOCAL_NAMESPACE_LABEL;
+    const localLabel = this.packageIndex?.orgNamespace || LOCAL_NAMESPACE_LABEL;
     if (nsKey === localLabel) {
       return "Local";
     }
@@ -1526,7 +1517,13 @@ export default class MetadataExplorer extends CliElement {
         row.metadataType = typeName;
       }
       if (row._children) {
-        this.propagateFieldsToChildren(row._children, nsKey, pkgName, pkgType, typeName);
+        this.propagateFieldsToChildren(
+          row._children,
+          nsKey,
+          pkgName,
+          pkgType,
+          typeName
+        );
       }
     }
   }

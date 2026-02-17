@@ -323,7 +323,8 @@ export default class MetadataExplorer extends LightningElement {
       .slice()
       .sort((a: any, b: any) => a.xmlName.localeCompare(b.xmlName))
       .map((typeObj: any) => {
-        const loaded = this.metadataItemsByType.has(typeObj.xmlName) ||
+        const loaded =
+          this.metadataItemsByType.has(typeObj.xmlName) ||
           this.folderBasedMetadataItems.has(typeObj.xmlName);
         return {
           id: typeObj.xmlName,
@@ -351,7 +352,12 @@ export default class MetadataExplorer extends LightningElement {
     const tree = new Map<string, Map<string, Map<string, TypeBucket>>>();
     const packageTypeLabels = new Map<string, Map<string, string>>();
 
-    const ensureBucket = (nsKey: string, pkgKey: string, typeName: string, pkgType: string): TypeBucket => {
+    const ensureBucket = (
+      nsKey: string,
+      pkgKey: string,
+      typeName: string,
+      pkgType: string
+    ): TypeBucket => {
       if (!tree.has(nsKey)) {
         tree.set(nsKey, new Map());
         packageTypeLabels.set(nsKey, new Map());
@@ -373,7 +379,12 @@ export default class MetadataExplorer extends LightningElement {
       const itemArray = Array.isArray(items) ? items : [];
       for (const item of itemArray) {
         const classified = classifyMetadataItem(item, this.packageIndex);
-        const bucket = ensureBucket(classified.namespaceKey, classified.packageKey, typeName, classified.packageType);
+        const bucket = ensureBucket(
+          classified.namespaceKey,
+          classified.packageKey,
+          typeName,
+          classified.packageType
+        );
         bucket.items.push(item);
       }
     }
@@ -382,7 +393,12 @@ export default class MetadataExplorer extends LightningElement {
       const itemArray = Array.isArray(items) ? items : [];
       for (const item of itemArray) {
         const classified = classifyFolderBasedItem(item, this.packageIndex);
-        const bucket = ensureBucket(classified.namespaceKey, classified.packageKey, typeName, classified.packageType);
+        const bucket = ensureBucket(
+          classified.namespaceKey,
+          classified.packageKey,
+          typeName,
+          classified.packageType
+        );
         bucket.folderItems.push(item);
       }
     }
@@ -411,7 +427,8 @@ export default class MetadataExplorer extends LightningElement {
         const typeRows: any[] = [];
         const isUnpackaged = pkgKey === UNPACKAGED_LABEL;
         const displayPkgName = isUnpackaged ? "" : pkgKey;
-        const pkgType = packageTypeLabels.get(nsKey)?.get(pkgKey) ?? "unpackaged";
+        const pkgType =
+          packageTypeLabels.get(nsKey)?.get(pkgKey) ?? "unpackaged";
 
         for (const typeName of sortedTypes) {
           const bucket = pkgMap.get(typeName)!;
@@ -500,7 +517,9 @@ export default class MetadataExplorer extends LightningElement {
           if (parsed.status === 0) {
             installedPkgs = parsed.result?.records ?? [];
           }
-        } catch { /* noop */ }
+        } catch {
+          /* noop */
+        }
       }
 
       if (pkg2Result?.stdout) {
@@ -509,7 +528,9 @@ export default class MetadataExplorer extends LightningElement {
           if (parsed.status === 0) {
             package2s = parsed.result?.records ?? [];
           }
-        } catch { /* noop */ }
+        } catch {
+          /* noop */
+        }
       }
 
       const hasNoNsInstalledPkg = installedPkgs.some(
@@ -517,18 +538,29 @@ export default class MetadataExplorer extends LightningElement {
       );
       if (package2s.length > 0 || hasNoNsInstalledPkg) {
         try {
-          const membersResult = await this.executeCommand("queryPackage2Members");
+          const membersResult = await this.executeCommand(
+            "queryPackage2Members"
+          );
           if (membersResult?.stdout) {
             const parsed = JSON.parse(membersResult.stdout);
             if (parsed.status === 0) {
               package2Members = parsed.result?.records ?? [];
             }
           }
-        } catch { /* noop */ }
+        } catch {
+          /* noop */
+        }
       }
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
 
-    this.packageIndex = buildPackageIndex(installedPkgs, package2s, package2Members, orgNamespace);
+    this.packageIndex = buildPackageIndex(
+      installedPkgs,
+      package2s,
+      package2Members,
+      orgNamespace
+    );
     this.packageDiscoveryComplete = true;
     this.refresh();
   }

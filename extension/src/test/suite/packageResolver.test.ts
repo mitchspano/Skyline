@@ -101,23 +101,33 @@ describe("packageResolver", () => {
     const namespaces = new Set(["CONGA", "nCino"]);
 
     it("extracts namespace from fullName with __ separator", () => {
-      expect(extractNamespaceFromFullName("CONGA__MyObject__c", namespaces)).toBe("CONGA");
+      expect(
+        extractNamespaceFromFullName("CONGA__MyObject__c", namespaces)
+      ).toBe("CONGA");
     });
 
     it("returns undefined for fullName without namespace", () => {
-      expect(extractNamespaceFromFullName("MyClass", namespaces)).toBeUndefined();
+      expect(
+        extractNamespaceFromFullName("MyClass", namespaces)
+      ).toBeUndefined();
     });
 
     it("returns undefined for fullName with unknown namespace prefix", () => {
-      expect(extractNamespaceFromFullName("UNKNOWN__MyClass", namespaces)).toBeUndefined();
+      expect(
+        extractNamespaceFromFullName("UNKNOWN__MyClass", namespaces)
+      ).toBeUndefined();
     });
 
     it("returns undefined when __ appears after first segment that is not a known namespace", () => {
-      expect(extractNamespaceFromFullName("Custom__Field__c", namespaces)).toBeUndefined();
+      expect(
+        extractNamespaceFromFullName("Custom__Field__c", namespaces)
+      ).toBeUndefined();
     });
 
     it("correctly extracts known namespace even with multiple __ segments", () => {
-      expect(extractNamespaceFromFullName("nCino__Custom__c", namespaces)).toBe("nCino");
+      expect(extractNamespaceFromFullName("nCino__Custom__c", namespaces)).toBe(
+        "nCino"
+      );
     });
 
     it("returns undefined for empty string", () => {
@@ -125,7 +135,9 @@ describe("packageResolver", () => {
     });
 
     it("returns undefined when __ is at the start", () => {
-      expect(extractNamespaceFromFullName("__Something", namespaces)).toBeUndefined();
+      expect(
+        extractNamespaceFromFullName("__Something", namespaces)
+      ).toBeUndefined();
     });
   });
 
@@ -141,7 +153,9 @@ describe("packageResolver", () => {
       expect(index.knownNamespaces.has("CONGA")).toBe(true);
       expect(index.knownNamespaces.has("nCino")).toBe(true);
       expect(index.packagesByNamespace.get("CONGA")).toHaveLength(1);
-      expect(index.packagesByNamespace.get("CONGA")![0].name).toBe("Conga Composer");
+      expect(index.packagesByNamespace.get("CONGA")![0].name).toBe(
+        "Conga Composer"
+      );
       expect(index.packagesByNamespace.get("CONGA")![0].type).toBe("managed");
     });
 
@@ -174,12 +188,7 @@ describe("packageResolver", () => {
     });
 
     it("adds unlocked packages without namespace", () => {
-      const index = buildPackageIndex(
-        [],
-        [PKG2_UNLOCKED_A],
-        [],
-        "myOrg"
-      );
+      const index = buildPackageIndex([], [PKG2_UNLOCKED_A], [], "myOrg");
 
       const emptyNsPackages = index.packagesByNamespace.get("")!;
       expect(emptyNsPackages).toHaveLength(1);
@@ -196,12 +205,7 @@ describe("packageResolver", () => {
           SubjectKeyPrefix: "01p"
         }
       ];
-      const index = buildPackageIndex(
-        [],
-        [PKG2_NCINO_A],
-        members,
-        ""
-      );
+      const index = buildPackageIndex([], [PKG2_NCINO_A], members, "");
 
       const pkg = index.componentToPackage.get("01pxx0000099");
       expect(pkg).toBeDefined();
@@ -317,12 +321,7 @@ describe("packageResolver", () => {
     });
 
     it("uses orgNamespace for local label when set", () => {
-      const indexWithNs = buildPackageIndex(
-        [],
-        [],
-        [],
-        "myOrgNs"
-      );
+      const indexWithNs = buildPackageIndex([], [], [], "myOrgNs");
       const item = makeMetadataItem({
         fullName: "CustomUtility",
         type: "ApexClass",
@@ -392,12 +391,7 @@ describe("packageResolver", () => {
     let index: PackageIndex;
 
     beforeEach(() => {
-      index = buildPackageIndex(
-        [CONGA_INSTALLED],
-        [],
-        [],
-        ""
-      );
+      index = buildPackageIndex([CONGA_INSTALLED], [], [], "");
     });
 
     it("classifies item with known NamespacePrefix as managed", () => {

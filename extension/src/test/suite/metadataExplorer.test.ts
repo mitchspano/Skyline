@@ -717,7 +717,9 @@ describe("MetadataExplorer Component Tests", () => {
       });
 
       it("should produce package-centric tree when package discovery is complete", () => {
-        const { buildPackageIndex } = require("../../modules/s/metadataExplorer/packageResolver");
+        const {
+          buildPackageIndex
+        } = require("../../modules/s/metadataExplorer/packageResolver");
         (metadataExplorer as any).packageDiscoveryComplete = true;
         (metadataExplorer as any).packageIndex = buildPackageIndex(
           [
@@ -890,7 +892,9 @@ describe("MetadataExplorer Component Tests", () => {
     });
 
     it("should handle Tooling API failures gracefully", async () => {
-      mockExecuteCommand.mockRejectedValue(new Error("Tooling API unavailable"));
+      mockExecuteCommand.mockRejectedValue(
+        new Error("Tooling API unavailable")
+      );
 
       await (metadataExplorer as any).discoverPackages("myOrg");
 
