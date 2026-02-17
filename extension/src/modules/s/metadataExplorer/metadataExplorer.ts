@@ -808,58 +808,6 @@ export default class MetadataExplorer extends CliElement {
   }
 
   /**
-   * Applies filters to the table rows.
-   * Currently applies last modified date and component name filters.
-   * @param rows The table rows to filter.
-   * @returns The filtered table rows.
-   */
-  private applyTableRowFilters(rows: TableRow[]): TableRow[] {
-    rows = this.applyLastModifiedDateRowFilter(rows);
-    rows = this.applyComponentNameTableRowFilter(rows);
-    return rows;
-  }
-
-  /**
-   * Filters table rows based on the last modified date range.
-   * @param rows The table rows to filter.
-   * @returns The filtered table rows.
-   */
-  private applyLastModifiedDateRowFilter(rows: TableRow[]): TableRow[] {
-    if (!this.searchTermFrom && !this.searchTermTo) {
-      return rows;
-    }
-
-    const from = this.searchTermFrom
-      ? new Date(this.searchTermFrom)
-      : undefined;
-    const to = this.searchTermTo ? new Date(this.searchTermTo) : undefined;
-
-    return rows.filter((row) => {
-      if (!row.lastModifiedDate) {
-        return true;
-      }
-      const lastModifiedDate = new Date(row.lastModifiedDate);
-      return (
-        (!from || lastModifiedDate >= from) && (!to || lastModifiedDate <= to)
-      );
-    });
-  }
-
-  /**
-   * Filters table rows based on the component name search term.
-   * @param rows The table rows to filter.
-   * @returns The filtered table rows.
-   */
-  private applyComponentNameTableRowFilter(rows: TableRow[]): TableRow[] {
-    if (!this.searchTermComponentName) {
-      return rows;
-    }
-    return rows.filter((row) =>
-      this.fuzzyMatch(row.fullName!, this.searchTermComponentName!)
-    );
-  }
-
-  /**
    * Performs a fuzzy match between a string and a pattern.
    * @param str The string to search within.
    * @param pattern The pattern to search for.
@@ -999,11 +947,8 @@ export default class MetadataExplorer extends CliElement {
     if (!childMetadataItems) {
       return undefined;
     }
-    return this.applyTableRowFilters(
-      childMetadataItems.result.map((item) =>
-        convertMetadataItemToTableRow(item)
-      )
-    )
+    return childMetadataItems.result
+      .map((item) => convertMetadataItemToTableRow(item))
       .filter((item) => item.sObjectApiName === metadataItem.fullName)
       .sort((a, b) => a.fullName!.localeCompare(b.fullName!));
   }
@@ -1024,8 +969,8 @@ export default class MetadataExplorer extends CliElement {
       if (childType === STANDARD_FIELD) continue;
       const childMetadataItems = this.metadataItemsByType.get(childType);
       if (!childMetadataItems) continue;
-      const rows = this.applyTableRowFilters(
-        childMetadataItems.result.map((item) => convertMetadataItemToTableRow(item))
+      const rows = childMetadataItems.result.map((item) =>
+        convertMetadataItemToTableRow(item)
       );
       const byParent = new Map<string, TableRow[]>();
       for (const row of rows) {
@@ -1052,9 +997,8 @@ export default class MetadataExplorer extends CliElement {
     typeObj: MetadataObjectType
   ): TableRow[] {
     const childTypeToParentToRows = this.buildChildTypeToParentToRows(typeObj);
-    return this.applyTableRowFilters(
-      items.map((item) => convertMetadataItemToTableRow(item))
-    )
+    return items
+      .map((item) => convertMetadataItemToTableRow(item))
       .sort((a, b) => a.fullName!.localeCompare(b.fullName!))
       .map((child) => ({
         ...child,
@@ -1222,16 +1166,106 @@ export default class MetadataExplorer extends CliElement {
   /**
    * Computes the full rows tree. Dispatches to the package-centric or flat view
    * depending on whether package discovery has completed.
+   * Applies tree-wide filters (component name, date range) as post-processing.
    */
   private computeRows(): TableRow[] | undefined {
     const objects = this.metadataTypes?.result.metadataObjects;
     if (!objects?.length) {
       return undefined;
     }
+    let rows: TableRow[] | undefined;
     if (this.packageDiscoveryComplete && this.packageIndex) {
-      return this.computeRowsPackageCentric();
+      rows = this.computeRowsPackageCentric();
+    } else {
+      rows = this.computeRowsFlat();
     }
-    return this.computeRowsFlat();
+    if (rows) {
+      rows = this.applyTreeWideFilters(rows);
+      if (rows.length === 0) {
+        return undefined;
+      }
+    }
+    return rows;
+  }
+
+  /**
+   * Applies all tree-wide filters to the fully constructed tree.
+   * Filters are applied as a single recursive pass: a leaf is kept only if it
+   * passes every active filter, and ancestor branches are kept only when they
+   * still have matching descendants.
+   */
+  private applyTreeWideFilters(rows: TableRow[]): TableRow[] {
+    const componentSearch = this.searchTermComponentName;
+    const from = this.searchTermFrom
+      ? new Date(this.searchTermFrom)
+      : undefined;
+    const to = this.searchTermTo ? new Date(this.searchTermTo) : undefined;
+
+    if (!componentSearch && !from && !to) {
+      return rows;
+    }
+    return this.filterTree(rows, componentSearch, from, to);
+  }
+
+  /**
+   * Recursively filters a tree of TableRows. Leaf nodes are kept only when they
+   * satisfy all active predicates; ancestor nodes are kept when at least one
+   * descendant leaf survives.
+   */
+  private filterTree(
+    rows: TableRow[],
+    componentSearch: string | undefined,
+    from: Date | undefined,
+    to: Date | undefined
+  ): TableRow[] {
+    const result: TableRow[] = [];
+    for (const row of rows) {
+      if (row._children && row._children.length > 0) {
+        const filteredChildren = this.filterTree(
+          row._children,
+          componentSearch,
+          from,
+          to
+        );
+        if (filteredChildren.length > 0) {
+          result.push({ ...row, _children: filteredChildren });
+        }
+      } else {
+        if (this.leafMatchesFilters(row, componentSearch, from, to)) {
+          result.push(row);
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Tests whether a leaf row passes all active filters.
+   */
+  private leafMatchesFilters(
+    row: TableRow,
+    componentSearch: string | undefined,
+    from: Date | undefined,
+    to: Date | undefined
+  ): boolean {
+    if (componentSearch) {
+      const name = row.componentName || row.fullName || row.label || "";
+      if (!this.fuzzyMatch(name, componentSearch)) {
+        return false;
+      }
+    }
+    if (from || to) {
+      if (row.lastModifiedDate) {
+        const modified = new Date(row.lastModifiedDate);
+        if (from && modified < from) {
+          return false;
+        }
+        if (to && modified > to) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   /**

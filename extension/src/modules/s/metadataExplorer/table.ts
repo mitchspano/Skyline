@@ -65,12 +65,12 @@ export const COLUMNS = [
       minute: "2-digit"
     },
     sortable: true
-  },
-  {
-    fieldName: "status",
-    label: "Status",
-    cellAttributes: { iconName: { fieldName: "statusIcon" } }
   }
+  // {
+  //   fieldName: "status",
+  //   label: "Status",
+  //   cellAttributes: { iconName: { fieldName: "statusIcon" } }
+  // }
 ];
 
 /**

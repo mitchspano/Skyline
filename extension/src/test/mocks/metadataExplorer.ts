@@ -210,10 +210,100 @@ export default class MetadataExplorer extends LightningElement {
     if (!objects?.length) {
       return undefined;
     }
+    let rows: any[] | undefined;
     if (this.packageDiscoveryComplete && this.packageIndex) {
-      return this.computeRowsPackageCentric();
+      rows = this.computeRowsPackageCentric();
+    } else {
+      rows = this.computeRowsFlat();
     }
-    return this.computeRowsFlat();
+    if (rows) {
+      rows = this.applyTreeWideFilters(rows);
+      if (rows.length === 0) {
+        return undefined;
+      }
+    }
+    return rows;
+  }
+
+  private applyTreeWideFilters(rows: any[]): any[] {
+    const componentSearch = this.searchTermComponentName;
+    const from = this.searchTermFrom
+      ? new Date(this.searchTermFrom)
+      : undefined;
+    const to = this.searchTermTo ? new Date(this.searchTermTo) : undefined;
+
+    if (!componentSearch && !from && !to) {
+      return rows;
+    }
+    return this.filterTree(rows, componentSearch, from, to);
+  }
+
+  private filterTree(
+    rows: any[],
+    componentSearch: string | undefined,
+    from: Date | undefined,
+    to: Date | undefined
+  ): any[] {
+    const result: any[] = [];
+    for (const row of rows) {
+      if (row._children && row._children.length > 0) {
+        const filteredChildren = this.filterTree(
+          row._children,
+          componentSearch,
+          from,
+          to
+        );
+        if (filteredChildren.length > 0) {
+          result.push({ ...row, _children: filteredChildren });
+        }
+      } else {
+        if (this.leafMatchesFilters(row, componentSearch, from, to)) {
+          result.push(row);
+        }
+      }
+    }
+    return result;
+  }
+
+  private leafMatchesFilters(
+    row: any,
+    componentSearch: string | undefined,
+    from: Date | undefined,
+    to: Date | undefined
+  ): boolean {
+    if (componentSearch) {
+      const name = row.componentName || row.fullName || row.label || "";
+      if (!this.fuzzyMatch(name, componentSearch)) {
+        return false;
+      }
+    }
+    if (from || to) {
+      if (row.lastModifiedDate) {
+        const modified = new Date(row.lastModifiedDate);
+        if (from && modified < from) {
+          return false;
+        }
+        if (to && modified > to) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  private fuzzyMatch(str: string, pattern: string): boolean {
+    pattern = pattern.toLowerCase();
+    str = str.toLowerCase();
+    let patternIdx = 0;
+    for (const char of str) {
+      if (char === pattern[patternIdx]) {
+        patternIdx++;
+      }
+      if (patternIdx === pattern.length) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private computeRowsFlat(): any[] | undefined {
