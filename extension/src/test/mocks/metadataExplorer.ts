@@ -44,6 +44,9 @@ export default class MetadataExplorer extends LightningElement {
   standardFieldsBySObjectApiName = new Map();
   processedMetadataTypes: string[] = [];
   typesWithZeroItems: string[] = [];
+  totalMetadataTypesToProcess = 0;
+  completedMetadataTypeCount = 0;
+  inProgressMetadataTypes: string[] = [];
   packageIndex?: PackageIndex;
   packageDiscoveryComplete = false;
   refreshView = false;
@@ -210,8 +213,11 @@ export default class MetadataExplorer extends LightningElement {
     if (!objects?.length) {
       return undefined;
     }
+    if (!this.packageDiscoveryComplete) {
+      return undefined;
+    }
     let rows: any[] | undefined;
-    if (this.packageDiscoveryComplete && this.packageIndex) {
+    if (this.packageIndex) {
       rows = this.computeRowsPackageCentric();
     } else {
       rows = this.computeRowsFlat();

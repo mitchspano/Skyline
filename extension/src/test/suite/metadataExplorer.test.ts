@@ -689,7 +689,7 @@ describe("MetadataExplorer Component Tests", () => {
         };
       });
 
-      it("should fall back to flat view when package discovery is not complete", () => {
+      it("should return undefined when package discovery is not complete", () => {
         (metadataExplorer as any).packageDiscoveryComplete = false;
         (metadataExplorer as any).packageIndex = undefined;
         metadataExplorer.metadataItemsByType.set("ApexClass", {
@@ -713,10 +713,7 @@ describe("MetadataExplorer Component Tests", () => {
         });
 
         const rows = metadataExplorer.rows;
-        expect(rows).toBeDefined();
-        expect(rows!.length).toBe(2);
-        expect(rows![0].id).toBe("ApexClass");
-        expect(rows![1].id).toBe("CustomObject");
+        expect(rows).toBeUndefined();
       });
 
       it("should produce package-centric tree when package discovery is complete", () => {

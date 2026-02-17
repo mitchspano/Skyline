@@ -129,6 +129,11 @@ export default class MetadataExplorer extends CliElement {
   /** Types that returned 0 items from list metadata; excluded from the tree. */
   @track typesWithZeroItems: string[] = [];
 
+  /** Progress tracking for the parallel metadata type retrieval. */
+  @track totalMetadataTypesToProcess = 0;
+  @track completedMetadataTypeCount = 0;
+  @track inProgressMetadataTypes: string[] = [];
+
   /** Package index built from Tooling API queries for package-centric view. */
   @track packageIndex?: PackageIndex;
   @track packageDiscoveryComplete = false;
@@ -487,12 +492,17 @@ export default class MetadataExplorer extends CliElement {
       .sort((a, b) => a.xmlName.localeCompare(b.xmlName));
     const concurrency = MetadataExplorer.METADATA_LOAD_CONCURRENCY;
 
+    this.totalMetadataTypesToProcess = queue.length;
+    this.completedMetadataTypeCount = 0;
+    this.inProgressMetadataTypes = [];
+
     const worker = async (): Promise<void> => {
       while (queue.length > 0) {
         const typeObj = queue.shift();
         if (!typeObj) {
           break;
         }
+        this.trackTypeStarted(typeObj.xmlName);
         try {
           await this.loadOneMetadataTypeForInitialLoad(typeObj);
         } catch (error) {
@@ -503,14 +513,30 @@ export default class MetadataExplorer extends CliElement {
             );
           }
         }
+        this.trackTypeCompleted(typeObj.xmlName);
       }
     };
 
     const workers = Array.from({ length: concurrency }, () => worker());
     await Promise.all(workers);
 
+    this.inProgressMetadataTypes = [];
     this.refresh();
   }
+
+  /** Marks a metadata type as currently in-progress. */
+  private trackTypeStarted(typeName: string): void {
+    this.inProgressMetadataTypes = [...this.inProgressMetadataTypes, typeName];
+  }
+
+  /** Marks a metadata type as completed and removes it from the in-progress list. */
+  private trackTypeCompleted(typeName: string): void {
+    this.completedMetadataTypeCount++;
+    this.inProgressMetadataTypes = this.inProgressMetadataTypes.filter(
+      (t) => t !== typeName
+    );
+  }
+
 
   /**
    * Loads a single metadata type (list metadata or folder query). If the type has 0 items,
@@ -1000,14 +1026,14 @@ export default class MetadataExplorer extends CliElement {
     return items
       .map((item) => convertMetadataItemToTableRow(item))
       .sort((a, b) => a.fullName!.localeCompare(b.fullName!))
-      .map((child) => ({
-        ...child,
-        _children: this.getChildMetadataTableRows(
+      .map((child) => {
+        const childRows = this.getChildMetadataTableRows(
           child,
           childTypeToParentToRows,
           typeObj
-        )
-      }));
+        );
+        return childRows ? { ...child, _children: childRows } : child;
+      });
   }
 
   /**
@@ -1084,18 +1110,21 @@ export default class MetadataExplorer extends CliElement {
 
   /**
    * Returns child rows for a metadata type row (folder structure or item list).
+   * Returns undefined when no children exist so the tree-grid hides the expand chevron.
    */
-  private getChildrenForType(typeObj: MetadataObjectType): TableRow[] {
+  private getChildrenForType(
+    typeObj: MetadataObjectType
+  ): TableRow[] | undefined {
     if (typeObj.inFolder) {
       const items = this.folderBasedMetadataItems.get(typeObj.xmlName);
-      return items
-        ? this.buildFolderChildrenForType(typeObj.xmlName, items)
-        : [];
+      if (!items) return undefined;
+      const children = this.buildFolderChildrenForType(typeObj.xmlName, items);
+      return children.length > 0 ? children : undefined;
     }
     const metadataItems = this.metadataItemsByType.get(typeObj.xmlName);
-    return metadataItems
-      ? this.createChildRows(metadataItems.result, typeObj)
-      : [];
+    if (!metadataItems) return undefined;
+    const children = this.createChildRows(metadataItems.result, typeObj);
+    return children.length > 0 ? children : undefined;
   }
 
   /**
@@ -1164,8 +1193,10 @@ export default class MetadataExplorer extends CliElement {
   }
 
   /**
-   * Computes the full rows tree. Dispatches to the package-centric or flat view
-   * depending on whether package discovery has completed.
+   * Computes the full rows tree. Waits for package discovery to complete before
+   * rendering, so the tree always appears in its package-centric form without
+   * an intermediate flat view flash. Falls back to flat view only when package
+   * discovery explicitly yielded no index (e.g. error).
    * Applies tree-wide filters (component name, date range) as post-processing.
    */
   private computeRows(): TableRow[] | undefined {
@@ -1173,8 +1204,11 @@ export default class MetadataExplorer extends CliElement {
     if (!objects?.length) {
       return undefined;
     }
+    if (!this.packageDiscoveryComplete) {
+      return undefined;
+    }
     let rows: TableRow[] | undefined;
-    if (this.packageDiscoveryComplete && this.packageIndex) {
+    if (this.packageIndex) {
       rows = this.computeRowsPackageCentric();
     } else {
       rows = this.computeRowsFlat();
@@ -1519,6 +1553,30 @@ export default class MetadataExplorer extends CliElement {
   }
 
   /**
+   * Whether the retrieval progress indicator should be shown.
+   * Visible while loading is in progress (some types started but not all finished).
+   */
+  get showRetrievalProgress(): boolean {
+    return (
+      this.totalMetadataTypesToProcess > 0 &&
+      this.completedMetadataTypeCount < this.totalMetadataTypesToProcess
+    );
+  }
+
+  /** e.g. "Retrieved 21 / 210 Metadata Types." */
+  get retrievalProgressText(): string {
+    return `Retrieved ${this.completedMetadataTypeCount} / ${this.totalMetadataTypesToProcess} Metadata Types.`;
+  }
+
+  /** e.g. "Now retrieving: ApexClass, ApexTrigger, ApexPage, ..." */
+  get nowRetrievingText(): string {
+    if (this.inProgressMetadataTypes.length === 0) {
+      return "";
+    }
+    return `Now retrieving: ${this.inProgressMetadataTypes.join(", ")}`;
+  }
+
+  /**
    * Formats the spinner display text by joining spinner messages with newlines.
    * Returns undefined if there are no spinner messages.
    */
@@ -1642,8 +1700,7 @@ export default class MetadataExplorer extends CliElement {
       type: metadataType,
       lastModifiedByName: item.LastModifiedBy?.Name,
       lastModifiedDate: item.LastModifiedDate,
-      statusIcon: ICONS.complete,
-      _children: undefined
+      statusIcon: ICONS.complete
     };
   }
 }

@@ -88,6 +88,19 @@
         </lightning-layout>
       </template>
 
+      <template lwc:if={showRetrievalProgress}>
+        <div class="slds-p-horizontal_medium slds-p-bottom_small">
+          <p class="slds-text-body_regular">
+            <strong>{retrievalProgressText}</strong>
+          </p>
+          <template lwc:if={nowRetrievingText}>
+            <p class="slds-text-body_small slds-text-color_default">
+              {nowRetrievingText}
+            </p>
+          </template>
+        </div>
+      </template>
+
       <template lwc:if={rows}>
         <lightning-tree-grid
           data={rows}
