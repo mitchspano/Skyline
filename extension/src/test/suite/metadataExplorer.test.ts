@@ -59,7 +59,13 @@ jest.mock("../../modules/s/metadataExplorer/sfCli", () => ({
         default:
           throw new Error(`Unsupported folder-based metadata type: ${type}`);
       }
-    })
+    }),
+    queryInstalledPackages:
+      'sf data query --use-tooling-api --query "SELECT Id, SubscriberPackageId, SubscriberPackage.NamespacePrefix, SubscriberPackage.Name FROM InstalledSubscriberPackage ORDER BY SubscriberPackage.NamespacePrefix" --json',
+    queryPackage2:
+      'sf data query --use-tooling-api --query "SELECT Id, Name, NamespacePrefix, ContainerOptions FROM Package2 ORDER BY NamespacePrefix" --json',
+    queryPackage2Members:
+      'sf data query --use-tooling-api --query "SELECT Id, SubscriberPackageVersionId, SubjectId, SubjectKeyPrefix FROM Package2Member" --json'
   },
   COMMAND_PREFIX: {
     sfOrgListMetadata: "sf org list metadata --metadata-type"
@@ -73,8 +79,11 @@ jest.mock("../../modules/s/metadataExplorer/table", () => ({
     loading: "⏳"
   },
   COLUMNS: [
-    { label: "Name", fieldName: "fullName", type: "text" },
-    { label: "Type", fieldName: "metadataType", type: "text" },
+    { label: "Namespace", fieldName: "namespace", sortable: true },
+    { label: "Package Name", fieldName: "packageName", sortable: true },
+    { label: "Package Type", fieldName: "packageType", sortable: true },
+    { label: "Metadata Type", fieldName: "metadataType", sortable: true },
+    { label: "Component Name", fieldName: "componentName", sortable: true },
     { label: "Last Modified", fieldName: "lastModifiedDate", type: "date" }
   ],
   convertMetadataObjectTypeToTableRow: jest.fn((type) => ({
@@ -98,6 +107,19 @@ jest.mock("../../modules/s/metadataExplorer/table", () => ({
     metadataType: "StandardField",
     type: "StandardField",
     sObjectApiName: sObjectName
+  })),
+  createNamespaceRow: jest.fn((nsKey, pkgType) => ({
+    id: `ns_${nsKey}`,
+    label: nsKey,
+    namespace: nsKey,
+    packageType: pkgType
+  })),
+  createPackageRow: jest.fn((nsKey, pkgName, pkgType) => ({
+    id: `pkg_${nsKey}_${pkgName}`,
+    label: pkgName,
+    namespace: nsKey,
+    packageName: pkgName,
+    packageType: pkgType
   }))
 }));
 
@@ -634,6 +656,331 @@ describe("MetadataExplorer Component Tests", () => {
         // Act & Assert
         expect(metadataExplorer.spinnerDisplayText).toBeUndefined();
       });
+    });
+
+    describe("rows (package-centric view)", () => {
+      beforeEach(() => {
+        metadataExplorer.metadataTypes = {
+          status: 0,
+          result: {
+            metadataObjects: [
+              {
+                xmlName: "ApexClass",
+                inFolder: false,
+                childXmlNames: [],
+                directoryName: "classes",
+                metaFile: true,
+                suffix: "cls"
+              },
+              {
+                xmlName: "CustomObject",
+                inFolder: false,
+                childXmlNames: ["CustomField"],
+                directoryName: "objects",
+                metaFile: true,
+                suffix: "object"
+              }
+            ],
+            organizationNamespace: "",
+            partialSaveAllowed: false,
+            testRequired: false
+          },
+          warnings: []
+        };
+      });
+
+      it("should fall back to flat view when package discovery is not complete", () => {
+        (metadataExplorer as any).packageDiscoveryComplete = false;
+        (metadataExplorer as any).packageIndex = undefined;
+        metadataExplorer.metadataItemsByType.set("ApexClass", {
+          status: 0,
+          result: [
+            {
+              fullName: "MyClass",
+              type: "ApexClass",
+              fileName: "classes/MyClass.cls",
+              id: "001",
+              createdById: "",
+              createdByName: "",
+              createdDate: "",
+              lastModifiedById: "",
+              lastModifiedByName: "",
+              lastModifiedDate: "",
+              manageableState: "unmanaged"
+            }
+          ],
+          warnings: []
+        });
+
+        const rows = metadataExplorer.rows;
+        expect(rows).toBeDefined();
+        expect(rows!.length).toBe(2);
+        expect(rows![0].id).toBe("ApexClass");
+        expect(rows![1].id).toBe("CustomObject");
+      });
+
+      it("should produce package-centric tree when package discovery is complete", () => {
+        const { buildPackageIndex } = require("../../modules/s/metadataExplorer/packageResolver");
+        (metadataExplorer as any).packageDiscoveryComplete = true;
+        (metadataExplorer as any).packageIndex = buildPackageIndex(
+          [
+            {
+              Id: "0A3xx001",
+              SubscriberPackageId: "033xx001",
+              SubscriberPackage: {
+                NamespacePrefix: "CONGA",
+                Name: "Conga Composer"
+              }
+            }
+          ],
+          [],
+          [],
+          ""
+        );
+
+        metadataExplorer.metadataItemsByType.set("ApexClass", {
+          status: 0,
+          result: [
+            {
+              fullName: "MyLocalClass",
+              type: "ApexClass",
+              fileName: "classes/MyLocalClass.cls",
+              id: "001",
+              createdById: "",
+              createdByName: "",
+              createdDate: "",
+              lastModifiedById: "",
+              lastModifiedByName: "Admin",
+              lastModifiedDate: "2025-01-01",
+              manageableState: "unmanaged"
+            },
+            {
+              fullName: "CONGA__DocGen",
+              type: "ApexClass",
+              fileName: "classes/CONGA__DocGen.cls",
+              id: "002",
+              createdById: "",
+              createdByName: "",
+              createdDate: "",
+              lastModifiedById: "",
+              lastModifiedByName: "Conga",
+              lastModifiedDate: "2024-06-01",
+              manageableState: "installed"
+            }
+          ],
+          warnings: []
+        });
+
+        const rows = metadataExplorer.rows;
+        expect(rows).toBeDefined();
+        expect(rows!.length).toBe(2);
+
+        const localNs = rows!.find((r) => r.id === "ns_(local)");
+        expect(localNs).toBeDefined();
+        expect(localNs!.namespace).toBe("(local)");
+
+        const congaNs = rows!.find((r) => r.id === "ns_CONGA");
+        expect(congaNs).toBeDefined();
+        expect(congaNs!.namespace).toBe("CONGA");
+
+        const localPkg = localNs!._children?.[0];
+        expect(localPkg).toBeDefined();
+        expect(localPkg!.packageName).toBe("");
+
+        const localApex = localPkg!._children?.find(
+          (r) => r.metadataType === "ApexClass"
+        );
+        expect(localApex).toBeDefined();
+        expect(localApex!._children).toBeDefined();
+        expect(localApex!._children!.length).toBe(1);
+        expect(localApex!._children![0].fullName).toBe("MyLocalClass");
+        expect(localApex!._children![0].namespace).toBe("(local)");
+        expect(localApex!._children![0].packageName).toBe("");
+        expect(localApex!._children![0].componentName).toBe("MyLocalClass");
+
+        const congaPkg = congaNs!._children?.[0];
+        expect(congaPkg).toBeDefined();
+        expect(congaPkg!.packageName).toBe("Conga Composer");
+
+        const congaApex = congaPkg!._children?.find(
+          (r) => r.metadataType === "ApexClass"
+        );
+        expect(congaApex).toBeDefined();
+        expect(congaApex!._children).toBeDefined();
+        expect(congaApex!._children![0].fullName).toBe("CONGA__DocGen");
+      });
+
+      it("should return undefined when no metadata types loaded", () => {
+        metadataExplorer.metadataTypes = undefined;
+        expect(metadataExplorer.rows).toBeUndefined();
+      });
+    });
+  });
+
+  describe("handleToggle (structural rows)", () => {
+    it("should not execute any command for namespace row", async () => {
+      await metadataExplorer.handleToggle({
+        detail: { name: "ns_(local)", isExpanded: true }
+      } as CustomEvent);
+      expect(mockExecuteCommand).not.toHaveBeenCalled();
+    });
+
+    it("should not execute any command for package row", async () => {
+      await metadataExplorer.handleToggle({
+        detail: { name: "pkg_CONGA_CongaComposer", isExpanded: true }
+      } as CustomEvent);
+      expect(mockExecuteCommand).not.toHaveBeenCalled();
+    });
+
+    it("should not execute any command for type-within-package row", async () => {
+      await metadataExplorer.handleToggle({
+        detail: { name: "type_Local_Unpackaged_ApexClass", isExpanded: true }
+      } as CustomEvent);
+      expect(mockExecuteCommand).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("discoverPackages", () => {
+    it("should build packageIndex from Tooling API responses", async () => {
+      const installedPkgResponse = JSON.stringify({
+        status: 0,
+        result: {
+          records: [
+            {
+              Id: "0A3xx001",
+              SubscriberPackageId: "033xx001",
+              SubscriberPackage: {
+                NamespacePrefix: "CONGA",
+                Name: "Conga Composer"
+              }
+            }
+          ],
+          totalSize: 1,
+          done: true
+        }
+      });
+
+      const pkg2Response = JSON.stringify({
+        status: 0,
+        result: { records: [], totalSize: 0, done: true }
+      });
+
+      mockExecuteCommand
+        .mockResolvedValueOnce({
+          command: "queryInstalledPackages",
+          stdout: installedPkgResponse,
+          stderr: "",
+          elementId: "test",
+          requestId: "test",
+          errorCode: 0
+        })
+        .mockResolvedValueOnce({
+          command: "queryPackage2",
+          stdout: pkg2Response,
+          stderr: "",
+          elementId: "test",
+          requestId: "test",
+          errorCode: 0
+        });
+
+      await (metadataExplorer as any).discoverPackages("");
+
+      expect((metadataExplorer as any).packageDiscoveryComplete).toBe(true);
+      expect((metadataExplorer as any).packageIndex).toBeDefined();
+      expect(
+        (metadataExplorer as any).packageIndex.knownNamespaces.has("CONGA")
+      ).toBe(true);
+    });
+
+    it("should handle Tooling API failures gracefully", async () => {
+      mockExecuteCommand.mockRejectedValue(new Error("Tooling API unavailable"));
+
+      await (metadataExplorer as any).discoverPackages("myOrg");
+
+      expect((metadataExplorer as any).packageDiscoveryComplete).toBe(true);
+      expect((metadataExplorer as any).packageIndex).toBeDefined();
+      expect(
+        (metadataExplorer as any).packageIndex.packagesByNamespace.size
+      ).toBe(0);
+    });
+
+    it("should query Package2Members when any Package2 records exist", async () => {
+      const installedPkgResponse = JSON.stringify({
+        status: 0,
+        result: { records: [], totalSize: 0, done: true }
+      });
+
+      const pkg2Response = JSON.stringify({
+        status: 0,
+        result: {
+          records: [
+            {
+              Id: "0Ho001",
+              Name: "My Unlocked Pkg",
+              NamespacePrefix: "",
+              ContainerOptions: "Unlocked"
+            }
+          ],
+          totalSize: 1,
+          done: true
+        }
+      });
+
+      const membersResponse = JSON.stringify({
+        status: 0,
+        result: {
+          records: [
+            {
+              Id: "0Mexx0000001",
+              Package2Id: "0Ho001",
+              SubjectId: "01pxx0000099",
+              SubjectKeyPrefix: "01p"
+            }
+          ],
+          totalSize: 1,
+          done: true
+        }
+      });
+
+      mockExecuteCommand
+        .mockResolvedValueOnce({
+          command: "queryInstalledPackages",
+          stdout: installedPkgResponse,
+          stderr: "",
+          elementId: "test",
+          requestId: "test",
+          errorCode: 0
+        })
+        .mockResolvedValueOnce({
+          command: "queryPackage2",
+          stdout: pkg2Response,
+          stderr: "",
+          elementId: "test",
+          requestId: "test",
+          errorCode: 0
+        })
+        .mockResolvedValueOnce({
+          command: "queryPackage2Members",
+          stdout: membersResponse,
+          stderr: "",
+          elementId: "test",
+          requestId: "test",
+          errorCode: 0
+        });
+
+      await (metadataExplorer as any).discoverPackages("");
+
+      expect(mockExecuteCommand).toHaveBeenCalledTimes(3);
+      expect((metadataExplorer as any).packageDiscoveryComplete).toBe(true);
+      const pkgIndex = (metadataExplorer as any).packageIndex;
+      const emptyNsPackages = pkgIndex.packagesByNamespace.get("");
+      expect(emptyNsPackages).toBeDefined();
+      expect(emptyNsPackages.length).toBe(1);
+      expect(emptyNsPackages[0].name).toBe("My Unlocked Pkg");
+      expect(pkgIndex.componentToPackage.get("01pxx0000099")).toBeDefined();
+      expect(pkgIndex.componentToPackage.get("01pxx0000099").name).toBe(
+        "My Unlocked Pkg"
+      );
     });
   });
 });

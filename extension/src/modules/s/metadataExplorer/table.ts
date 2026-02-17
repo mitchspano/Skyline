@@ -43,8 +43,11 @@ export enum ICONS {
  * and how they are formatted.
  */
 export const COLUMNS = [
+  { label: "Namespace", fieldName: "namespace", sortable: true },
+  { label: "Package Name", fieldName: "packageName", sortable: true },
+  { label: "Package Type", fieldName: "packageType", sortable: true },
   { label: "Metadata Type", fieldName: "metadataType", sortable: true },
-  { label: "Full Name", fieldName: "label", sortable: true },
+  { label: "Component Name", fieldName: "componentName", sortable: true },
   {
     label: "Last Modified By",
     fieldName: "lastModifiedByName",
@@ -79,6 +82,10 @@ export interface TableRow {
   label?: string;
   fullName?: string;
   metadataType?: string;
+  namespace?: string;
+  packageName?: string;
+  packageType?: string;
+  componentName?: string;
   lastModifiedByName?: string;
   lastModifiedDate?: string;
   sObjectApiName?: string;
@@ -111,10 +118,12 @@ export function convertMetadataItemToTableRow(
   metadataItem: MetadataItem
 ): TableRow {
   const sObjectApiName = getObjectNameFromFileName(metadataItem.fileName);
+  const displayName = metadataItem.fullName.replace(`${sObjectApiName}.`, "");
   return {
     id: metadataItem.fullName,
-    label: metadataItem.fullName.replace(`${sObjectApiName}.`, ""),
+    label: displayName,
     fullName: metadataItem.fullName,
+    componentName: displayName,
     lastModifiedByName:
       metadataItem.lastModifiedByName ?? DEFAULT_LAST_MODIFIED_BY,
     lastModifiedDate:
@@ -138,9 +147,49 @@ export function convertFieldDefinitionRecordToTableRow(
     id: `${record.Id}.${record.QualifiedApiName}`,
     label: record.QualifiedApiName,
     fullName: `${sObjectApiName}.${record.QualifiedApiName}`,
+    componentName: record.QualifiedApiName,
     lastModifiedByName: record.LastModifiedBy?.Name ?? DEFAULT_LAST_MODIFIED_BY,
     lastModifiedDate: record.LastModifiedDate ?? DEFAULT_LAST_MODIFIED_DATE,
     type: "CustomField"
+  };
+}
+
+/**
+ * Creates a TableRow representing a namespace grouping node.
+ * @param namespaceKey The namespace identifier (e.g. "nCino", "Local").
+ * @param packageType A label describing the package type (e.g. "managed", "unlocked").
+ * @returns A TableRow for the namespace node.
+ */
+export function createNamespaceRow(
+  namespaceKey: string,
+  pkgType: string
+): TableRow {
+  return {
+    id: `ns_${namespaceKey}`,
+    label: namespaceKey,
+    namespace: namespaceKey,
+    packageType: pkgType
+  };
+}
+
+/**
+ * Creates a TableRow representing a package grouping node.
+ * @param namespaceKey The parent namespace identifier.
+ * @param packageName The package display name.
+ * @param packageType A label describing the package type.
+ * @returns A TableRow for the package node.
+ */
+export function createPackageRow(
+  namespaceKey: string,
+  packageName: string,
+  pkgType: string
+): TableRow {
+  return {
+    id: `pkg_${namespaceKey}_${packageName}`,
+    label: packageName,
+    namespace: namespaceKey,
+    packageName: packageName,
+    packageType: pkgType
   };
 }
 

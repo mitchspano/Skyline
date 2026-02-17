@@ -29,6 +29,7 @@ import {
   SalesforceConnectionInfo,
   ListMetadataTypesResponse,
   MetadataObjectType,
+  MetadataItem,
   ListMetadataOfTypeResponse,
   RetrieveMetadataResponse,
   FieldDefinitionResponse,
@@ -37,7 +38,11 @@ import {
   FolderBasedMetadataItem,
   ReportRecord,
   DashboardRecord,
-  DocumentRecord
+  DocumentRecord,
+  InstalledSubscriberPackageRecord,
+  Package2Record,
+  Package2MemberRecord,
+  ToolingQueryResponse
 } from "./sfCli";
 import {
   ICONS,
@@ -45,8 +50,19 @@ import {
   TableRow,
   convertMetadataObjectTypeToTableRow,
   convertMetadataItemToTableRow,
-  convertFieldDefinitionRecordToTableRow
+  convertFieldDefinitionRecordToTableRow,
+  createNamespaceRow,
+  createPackageRow
 } from "./table";
+import {
+  PackageIndex,
+  buildPackageIndex,
+  classifyMetadataItem,
+  classifyFolderBasedItem,
+  createEmptyPackageIndex,
+  LOCAL_NAMESPACE_LABEL,
+  UNPACKAGED_LABEL
+} from "./packageResolver";
 import CliElement from "../cliElement/cliElement";
 const DEFAULT_TIMEZONE = "America/Los_Angeles";
 const CUSTOM_OBJECT = "CustomObject";
@@ -113,6 +129,10 @@ export default class MetadataExplorer extends CliElement {
   /** Types that returned 0 items from list metadata; excluded from the tree. */
   @track typesWithZeroItems: string[] = [];
 
+  /** Package index built from Tooling API queries for package-centric view. */
+  @track packageIndex?: PackageIndex;
+  @track packageDiscoveryComplete = false;
+
   private _rowsCacheKey: string | null = null;
   private _rowsCacheValue: TableRow[] | undefined;
 
@@ -167,6 +187,10 @@ export default class MetadataExplorer extends CliElement {
       return;
     }
 
+    if (this.isStructuralRow(name)) {
+      return;
+    }
+
     const typeObj = this.getMetadataObjectType(name);
     if (typeObj) {
       await this.loadMetadataForType(name);
@@ -186,6 +210,18 @@ export default class MetadataExplorer extends CliElement {
         );
       }
     }
+  }
+
+  /**
+   * Returns true if the row name is a structural (namespace/package/type-within-package) row
+   * that should not trigger any async loading on expand.
+   */
+  private isStructuralRow(name: string): boolean {
+    return (
+      name.startsWith("ns_") ||
+      name.startsWith("pkg_") ||
+      name.startsWith("type_")
+    );
   }
 
   /**
@@ -413,7 +449,11 @@ export default class MetadataExplorer extends CliElement {
         result.stdout
       ) as ListMetadataTypesResponse;
       this.metadataTypes = parsed;
-      this.loadAllMetadataTypesInParallel(parsed);
+      const orgNamespace = parsed.result?.organizationNamespace ?? "";
+      Promise.all([
+        this.discoverPackages(orgNamespace),
+        this.loadAllMetadataTypesInParallel(parsed)
+      ]).then(() => this.refresh());
     } else if (result.stderr) {
       this.handleError(
         result.stderr,
@@ -475,6 +515,7 @@ export default class MetadataExplorer extends CliElement {
   /**
    * Loads a single metadata type (list metadata or folder query). If the type has 0 items,
    * adds it to typesWithZeroItems so it is removed from the tree.
+   * Also loads child metadata types (e.g. CustomField, ValidationRule for CustomObject).
    */
   private async loadOneMetadataTypeForInitialLoad(
     typeObj: MetadataObjectType
@@ -519,7 +560,123 @@ export default class MetadataExplorer extends CliElement {
           // Leave type visible on parse error
         }
       }
+
+      if (typeObj.childXmlNames?.length) {
+        await this.loadChildTypesForInitialLoad(typeObj);
+      }
     }
+    this.refresh();
+  }
+
+  /**
+   * Loads all child metadata types for a parent type during the initial parallel load.
+   * For example, loads CustomField, ValidationRule, etc. for CustomObject.
+   * Skips child types that are already loaded.
+   */
+  private async loadChildTypesForInitialLoad(
+    typeObj: MetadataObjectType
+  ): Promise<void> {
+    const childTypes = typeObj.childXmlNames;
+    if (!childTypes?.length) {
+      return;
+    }
+    await Promise.allSettled(
+      childTypes.map(async (childType) => {
+        if (this.metadataItemsByType.has(childType)) {
+          return;
+        }
+        try {
+          const command = COMMANDS.listMetadataOfType(childType);
+          const result = await this.executeCommand(command);
+          if (result.stdout) {
+            const parsed = JSON.parse(
+              result.stdout
+            ) as ListMetadataOfTypeResponse;
+            const items = parsed.result ?? [];
+            if (items.length > 0) {
+              this.metadataItemsByType.set(childType, parsed);
+            }
+          }
+        } catch {
+          // Child type load failed; the parent item still displays
+        }
+      })
+    );
+  }
+
+  /**
+   * Queries Tooling API for InstalledSubscriberPackage, Package2, and (optionally)
+   * Package2Member to build a PackageIndex for classifying metadata by package.
+   * Runs in parallel with metadata loading. Falls back gracefully on errors.
+   */
+  private async discoverPackages(orgNamespace: string): Promise<void> {
+    let installedPkgs: InstalledSubscriberPackageRecord[] = [];
+    let package2s: Package2Record[] = [];
+    let package2Members: Package2MemberRecord[] = [];
+
+    try {
+      const [installedResult, pkg2Result] = await Promise.all([
+        this.executeCommand(COMMANDS.queryInstalledPackages).catch(() => null),
+        this.executeCommand(COMMANDS.queryPackage2).catch(() => null)
+      ]);
+
+      if (installedResult?.stdout) {
+        try {
+          const parsed = JSON.parse(
+            installedResult.stdout
+          ) as ToolingQueryResponse<InstalledSubscriberPackageRecord>;
+          if (parsed.status === 0) {
+            installedPkgs = parsed.result?.records ?? [];
+          }
+        } catch {
+          // Parse error; proceed with empty list
+        }
+      }
+
+      if (pkg2Result?.stdout) {
+        try {
+          const parsed = JSON.parse(
+            pkg2Result.stdout
+          ) as ToolingQueryResponse<Package2Record>;
+          if (parsed.status === 0) {
+            package2s = parsed.result?.records ?? [];
+          }
+        } catch {
+          // Parse error; proceed with empty list
+        }
+      }
+
+      const hasNoNsInstalledPkg = installedPkgs.some(
+        (p) => !p.SubscriberPackage.NamespacePrefix
+      );
+      if (package2s.length > 0 || hasNoNsInstalledPkg) {
+        try {
+          const membersResult = await this.executeCommand(
+            COMMANDS.queryPackage2Members
+          );
+          if (membersResult?.stdout) {
+            const parsed = JSON.parse(
+              membersResult.stdout
+            ) as ToolingQueryResponse<Package2MemberRecord>;
+            if (parsed.status === 0) {
+              package2Members = parsed.result?.records ?? [];
+            }
+          }
+        } catch {
+          // Package2Member query failed; proceed without component mapping
+        }
+      }
+    } catch {
+      // All queries failed; proceed with empty data
+    }
+
+    this.packageIndex = buildPackageIndex(
+      installedPkgs,
+      package2s,
+      package2Members,
+      orgNamespace
+    );
+    this.packageDiscoveryComplete = true;
     this.refresh();
   }
 
@@ -886,17 +1043,17 @@ export default class MetadataExplorer extends CliElement {
 
   /**
    * Creates child rows for the tree grid. Applies filters and sorts the rows.
-   * @param metadataItems The metadata items to create rows for.
+   * @param items The metadata items to create rows for.
    * @param typeObj The metadata type (for child types and structure).
    * @returns An array of TableRows representing the child metadata items.
    */
   private createChildRows(
-    metadataItems: ListMetadataOfTypeResponse,
+    items: MetadataItem[],
     typeObj: MetadataObjectType
   ): TableRow[] {
     const childTypeToParentToRows = this.buildChildTypeToParentToRows(typeObj);
     return this.applyTableRowFilters(
-      metadataItems.result.map((item) => convertMetadataItemToTableRow(item))
+      items.map((item) => convertMetadataItemToTableRow(item))
     )
       .sort((a, b) => a.fullName!.localeCompare(b.fullName!))
       .map((child) => ({
@@ -965,7 +1122,9 @@ export default class MetadataExplorer extends CliElement {
       this.standardFieldsBySObjectApiName.size,
       this.folderBasedMetadataItems.size,
       this.typesWithZeroItems.length,
-      this.typesWithZeroItems.slice().sort().join(",")
+      this.typesWithZeroItems.slice().sort().join(","),
+      this.packageDiscoveryComplete,
+      this.packageIndex?.knownNamespaces.size ?? 0
     ];
     return parts.join("|");
   }
@@ -991,7 +1150,7 @@ export default class MetadataExplorer extends CliElement {
     }
     const metadataItems = this.metadataItemsByType.get(typeObj.xmlName);
     return metadataItems
-      ? this.createChildRows(metadataItems, typeObj)
+      ? this.createChildRows(metadataItems.result, typeObj)
       : [];
   }
 
@@ -1000,10 +1159,12 @@ export default class MetadataExplorer extends CliElement {
    */
   private buildFolderChildrenForType(
     xmlName: string,
-    items: FolderBasedMetadataItem[]
+    items: FolderBasedMetadataItem[],
+    idPrefix?: string
   ): TableRow[] {
     const folderMap = new Map<string, FolderBasedMetadataItem[]>();
     const unfiledItems: FolderBasedMetadataItem[] = [];
+    const prefix = idPrefix ? `${idPrefix}_` : "";
 
     items.forEach((item) => {
       if (item.Folder) {
@@ -1021,7 +1182,7 @@ export default class MetadataExplorer extends CliElement {
 
     for (const [folderName, folderItems] of folderMap) {
       children.push({
-        id: `folder_${folderName}`,
+        id: `${prefix}folder_${folderName}`,
         label: folderName,
         metadataType: "Folder",
         type: xmlName,
@@ -1034,7 +1195,7 @@ export default class MetadataExplorer extends CliElement {
 
     if (unfiledItems.length > 0) {
       children.push({
-        id: "folder_unfiled",
+        id: `${prefix}folder_unfiled`,
         label: UNFILED_FOLDER_LABEL,
         metadataType: "Folder",
         type: xmlName,
@@ -1059,15 +1220,28 @@ export default class MetadataExplorer extends CliElement {
   }
 
   /**
-   * Computes the full rows tree. Root rows are metadata types that have items (or are still loading).
-   * Types that returned 0 items from list metadata are excluded.
+   * Computes the full rows tree. Dispatches to the package-centric or flat view
+   * depending on whether package discovery has completed.
    */
   private computeRows(): TableRow[] | undefined {
     const objects = this.metadataTypes?.result.metadataObjects;
     if (!objects?.length) {
       return undefined;
     }
+    if (this.packageDiscoveryComplete && this.packageIndex) {
+      return this.computeRowsPackageCentric();
+    }
+    return this.computeRowsFlat();
+  }
 
+  /**
+   * Flat view fallback: metadata types as root rows (used before package discovery completes).
+   */
+  private computeRowsFlat(): TableRow[] | undefined {
+    const objects = this.metadataTypes?.result.metadataObjects;
+    if (!objects?.length) {
+      return undefined;
+    }
     const zeroSet = new Set(this.typesWithZeroItems);
     const sorted = objects
       .filter((typeObj) => !zeroSet.has(typeObj.xmlName))
@@ -1078,10 +1252,215 @@ export default class MetadataExplorer extends CliElement {
       const loaded = this.isTypeLoaded(typeObj);
       return {
         ...convertMetadataObjectTypeToTableRow(typeObj),
+        namespace: typeObj.xmlName,
         statusIcon: loaded ? ICONS.complete : ICONS.loading,
         _children: this.getChildrenForType(typeObj)
       };
     });
+  }
+
+  /**
+   * Package-centric view: Namespace -> Package -> MetadataType -> Items.
+   * Classifies all loaded items by namespace/package and builds the nested tree.
+   */
+  private computeRowsPackageCentric(): TableRow[] | undefined {
+    const objects = this.metadataTypes?.result.metadataObjects;
+    if (!objects?.length || !this.packageIndex) {
+      return undefined;
+    }
+
+    const typeObjMap = new Map<string, MetadataObjectType>();
+    for (const obj of objects) {
+      typeObjMap.set(obj.xmlName, obj);
+    }
+
+    // Nested structure: namespace -> package -> type -> { items, folderItems }
+    type TypeBucket = {
+      items: MetadataItem[];
+      folderItems: FolderBasedMetadataItem[];
+    };
+    const tree = new Map<
+      string,
+      Map<string, Map<string, TypeBucket>>
+    >();
+    const packageTypeLabels = new Map<string, Map<string, string>>();
+
+    const ensureBucket = (
+      nsKey: string,
+      pkgKey: string,
+      typeName: string,
+      pkgType: string
+    ): TypeBucket => {
+      if (!tree.has(nsKey)) {
+        tree.set(nsKey, new Map());
+        packageTypeLabels.set(nsKey, new Map());
+      }
+      const nsMap = tree.get(nsKey)!;
+      if (!nsMap.has(pkgKey)) {
+        nsMap.set(pkgKey, new Map());
+      }
+      packageTypeLabels.get(nsKey)!.set(pkgKey, pkgType);
+      const pkgMap = nsMap.get(pkgKey)!;
+      if (!pkgMap.has(typeName)) {
+        pkgMap.set(typeName, { items: [], folderItems: [] });
+      }
+      return pkgMap.get(typeName)!;
+    };
+
+    for (const [typeName, response] of this.metadataItemsByType) {
+      for (const item of response.result) {
+        const classified = classifyMetadataItem(item, this.packageIndex);
+        const bucket = ensureBucket(
+          classified.namespaceKey,
+          classified.packageKey,
+          typeName,
+          classified.packageType
+        );
+        bucket.items.push(item);
+      }
+    }
+
+    for (const [typeName, items] of this.folderBasedMetadataItems) {
+      for (const item of items) {
+        const classified = classifyFolderBasedItem(item, this.packageIndex);
+        const bucket = ensureBucket(
+          classified.namespaceKey,
+          classified.packageKey,
+          typeName,
+          classified.packageType
+        );
+        bucket.folderItems.push(item);
+      }
+    }
+
+    const localLabel =
+      this.packageIndex.orgNamespace || LOCAL_NAMESPACE_LABEL;
+
+    const namespaceRows: TableRow[] = [];
+    const sortedNamespaces = Array.from(tree.keys()).sort((a, b) => {
+      if (a === localLabel) return -1;
+      if (b === localLabel) return 1;
+      return a.localeCompare(b);
+    });
+
+    for (const nsKey of sortedNamespaces) {
+      const nsMap = tree.get(nsKey)!;
+      const nsTypeLabels = packageTypeLabels.get(nsKey)!;
+
+      const sortedPackages = Array.from(nsMap.keys()).sort((a, b) => {
+        if (a === UNPACKAGED_LABEL) return -1;
+        if (b === UNPACKAGED_LABEL) return 1;
+        return a.localeCompare(b);
+      });
+
+      const packageRows: TableRow[] = [];
+      for (const pkgKey of sortedPackages) {
+        const pkgMap = nsMap.get(pkgKey)!;
+        const pkgType = nsTypeLabels.get(pkgKey) ?? "unpackaged";
+        const isUnpackaged = pkgKey === UNPACKAGED_LABEL;
+        const displayPkgName = isUnpackaged ? "" : pkgKey;
+
+        const sortedTypes = Array.from(pkgMap.keys()).sort();
+        const typeRows: TableRow[] = [];
+
+        for (const typeName of sortedTypes) {
+          const bucket = pkgMap.get(typeName)!;
+          const typeObj = typeObjMap.get(typeName);
+          if (!typeObj) {
+            continue;
+          }
+
+          const typeId = `type_${nsKey}_${pkgKey}_${typeName}`;
+          let children: TableRow[] = [];
+
+          if (typeObj.inFolder && bucket.folderItems.length > 0) {
+            children = this.buildFolderChildrenForType(
+              typeName,
+              bucket.folderItems,
+              typeId
+            );
+          } else if (bucket.items.length > 0) {
+            children = this.createChildRows(bucket.items, typeObj);
+          }
+
+          this.propagateFieldsToChildren(children, nsKey, displayPkgName, pkgType, typeName);
+
+          typeRows.push({
+            ...convertMetadataObjectTypeToTableRow(typeObj),
+            id: typeId,
+            namespace: nsKey,
+            packageName: displayPkgName,
+            packageType: pkgType,
+            statusIcon: ICONS.complete,
+            _children: children.length > 0 ? children : undefined
+          });
+        }
+
+        const pkgRow = {
+          ...createPackageRow(nsKey, displayPkgName, pkgType),
+          namespace: nsKey,
+          statusIcon: ICONS.complete,
+          _children: typeRows.length > 0 ? typeRows : undefined
+        };
+        packageRows.push(pkgRow);
+      }
+
+      const nsDisplayType = this.getNamespaceDisplayType(nsKey, nsTypeLabels);
+      const nsRow = {
+        ...createNamespaceRow(nsKey, nsDisplayType),
+        statusIcon: ICONS.complete,
+        _children: packageRows.length > 0 ? packageRows : undefined
+      };
+      namespaceRows.push(nsRow);
+    }
+
+    return namespaceRows.length > 0 ? namespaceRows : undefined;
+  }
+
+  /**
+   * Determines a display label for a namespace node based on its packages.
+   */
+  private getNamespaceDisplayType(
+    nsKey: string,
+    pkgTypeLabels: Map<string, string>
+  ): string {
+    const localLabel =
+      this.packageIndex?.orgNamespace || LOCAL_NAMESPACE_LABEL;
+    if (nsKey === localLabel) {
+      return "Local";
+    }
+    const types = new Set(pkgTypeLabels.values());
+    if (types.has("managed")) {
+      return "Managed";
+    }
+    if (types.has("unlocked")) {
+      return "Unlocked";
+    }
+    return "Package";
+  }
+
+  /**
+   * Recursively propagates namespace, packageName, packageType, and metadataType
+   * to all child and grandchild rows so every level shows full context in the columns.
+   */
+  private propagateFieldsToChildren(
+    rows: TableRow[],
+    nsKey: string,
+    pkgName: string,
+    pkgType: string,
+    typeName: string
+  ): void {
+    for (const row of rows) {
+      row.namespace = nsKey;
+      row.packageName = pkgName;
+      row.packageType = pkgType;
+      if (!row.metadataType) {
+        row.metadataType = typeName;
+      }
+      if (row._children) {
+        this.propagateFieldsToChildren(row._children, nsKey, pkgName, pkgType, typeName);
+      }
+    }
   }
 
   /**
@@ -1224,6 +1603,7 @@ export default class MetadataExplorer extends CliElement {
       id: item.Id,
       label: item.Name,
       fullName: fullName,
+      componentName: item.Name,
       metadataType: metadataType,
       type: metadataType,
       lastModifiedByName: item.LastModifiedBy?.Name,

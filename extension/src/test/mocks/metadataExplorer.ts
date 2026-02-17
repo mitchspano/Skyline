@@ -15,6 +15,15 @@
  */
 
 import { LightningElement } from "lwc";
+import {
+  PackageIndex,
+  buildPackageIndex,
+  classifyMetadataItem,
+  classifyFolderBasedItem,
+  createEmptyPackageIndex,
+  LOCAL_NAMESPACE_LABEL,
+  UNPACKAGED_LABEL
+} from "../../modules/s/metadataExplorer/packageResolver";
 
 export default class MetadataExplorer extends LightningElement {
   selectedMetadataType?: any;
@@ -32,18 +41,20 @@ export default class MetadataExplorer extends LightningElement {
   orgConnectionInfo?: any;
   filterState = false;
   isDebugMode = false;
+  standardFieldsBySObjectApiName = new Map();
+  processedMetadataTypes: string[] = [];
+  typesWithZeroItems: string[] = [];
+  packageIndex?: PackageIndex;
+  packageDiscoveryComplete = false;
+  refreshView = false;
+  columns: any[] = [];
 
   connectedCallback() {
     this.initializeMetadataExplorer();
   }
 
   async initializeMetadataExplorer() {
-    // Mock implementation that sets up the component
-    // Only set these if the test doesn't expect them to be undefined
-    // For error cases, don't set orgConnectionInfo
     if (!this.orgConnectionInfo && !this.isDebugMode) {
-      // Don't call executeCommand in the mock, just set the property directly
-      // But check if there's an error in the command result
       const orgDisplayResult = await this.executeCommand(
         "sf org display --json"
       );
@@ -82,25 +93,34 @@ export default class MetadataExplorer extends LightningElement {
     }
   }
 
+  private isStructuralRow(name: string): boolean {
+    return (
+      name.startsWith("ns_") ||
+      name.startsWith("pkg_") ||
+      name.startsWith("type_")
+    );
+  }
+
   async handleToggle(event: CustomEvent) {
-    // Only execute command for custom objects that are expanding
     const metadataItem = event.detail;
-    if (metadataItem && metadataItem.name && metadataItem.isExpanded) {
-      // Check if it's a custom object
-      if (
-        metadataItem.name.includes("__c") ||
-        metadataItem.name.includes("TestObject__c")
-      ) {
-        await this.executeCommand(
-          "sf data query --query \"SELECT QualifiedApiName, Label, DataType FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('TestObject__c')\" --json"
-        );
-        this.refresh();
-      }
+    if (!metadataItem || !metadataItem.isExpanded) {
+      return;
+    }
+    if (this.isStructuralRow(metadataItem.name)) {
+      return;
+    }
+    if (
+      metadataItem.name.includes("__c") ||
+      metadataItem.name.includes("TestObject__c")
+    ) {
+      await this.executeCommand(
+        "sf data query --query \"SELECT QualifiedApiName, Label, DataType FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('TestObject__c')\" --json"
+      );
+      this.refresh();
     }
   }
 
   async handleRetrieveClick() {
-    // Only execute if rows are selected
     if (this.selectedRows && this.selectedRows.length > 0) {
       await this.executeCommand(
         "sf project retrieve start --metadata ApexClass:TestClass,CustomObject:TestObject__c --json"
@@ -185,7 +205,238 @@ export default class MetadataExplorer extends LightningElement {
     return Array.from(this.spinnerMessages);
   }
 
-  // Mock executeCommand method for testing
+  get rows(): any[] | undefined {
+    const objects = this.metadataTypes?.result?.metadataObjects;
+    if (!objects?.length) {
+      return undefined;
+    }
+    if (this.packageDiscoveryComplete && this.packageIndex) {
+      return this.computeRowsPackageCentric();
+    }
+    return this.computeRowsFlat();
+  }
+
+  private computeRowsFlat(): any[] | undefined {
+    const objects = this.metadataTypes?.result?.metadataObjects;
+    if (!objects?.length) {
+      return undefined;
+    }
+    const zeroSet = new Set(this.typesWithZeroItems);
+    return objects
+      .filter((typeObj: any) => !zeroSet.has(typeObj.xmlName))
+      .slice()
+      .sort((a: any, b: any) => a.xmlName.localeCompare(b.xmlName))
+      .map((typeObj: any) => {
+        const loaded = this.metadataItemsByType.has(typeObj.xmlName) ||
+          this.folderBasedMetadataItems.has(typeObj.xmlName);
+        return {
+          id: typeObj.xmlName,
+          label: typeObj.xmlName,
+          namespace: typeObj.xmlName,
+          metadataType: typeObj.xmlName,
+          statusIcon: loaded ? "✅" : "⏳",
+          _children: this.getChildrenForType(typeObj)
+        };
+      });
+  }
+
+  private computeRowsPackageCentric(): any[] | undefined {
+    const objects = this.metadataTypes?.result?.metadataObjects;
+    if (!objects?.length || !this.packageIndex) {
+      return undefined;
+    }
+
+    const typeObjMap = new Map<string, any>();
+    for (const obj of objects) {
+      typeObjMap.set(obj.xmlName, obj);
+    }
+
+    type TypeBucket = { items: any[]; folderItems: any[] };
+    const tree = new Map<string, Map<string, Map<string, TypeBucket>>>();
+    const packageTypeLabels = new Map<string, Map<string, string>>();
+
+    const ensureBucket = (nsKey: string, pkgKey: string, typeName: string, pkgType: string): TypeBucket => {
+      if (!tree.has(nsKey)) {
+        tree.set(nsKey, new Map());
+        packageTypeLabels.set(nsKey, new Map());
+      }
+      const nsMap = tree.get(nsKey)!;
+      if (!nsMap.has(pkgKey)) {
+        nsMap.set(pkgKey, new Map());
+      }
+      packageTypeLabels.get(nsKey)!.set(pkgKey, pkgType);
+      const pkgMap = nsMap.get(pkgKey)!;
+      if (!pkgMap.has(typeName)) {
+        pkgMap.set(typeName, { items: [], folderItems: [] });
+      }
+      return pkgMap.get(typeName)!;
+    };
+
+    for (const [typeName, response] of this.metadataItemsByType) {
+      const items = response.result || response;
+      const itemArray = Array.isArray(items) ? items : [];
+      for (const item of itemArray) {
+        const classified = classifyMetadataItem(item, this.packageIndex);
+        const bucket = ensureBucket(classified.namespaceKey, classified.packageKey, typeName, classified.packageType);
+        bucket.items.push(item);
+      }
+    }
+
+    for (const [typeName, items] of this.folderBasedMetadataItems) {
+      const itemArray = Array.isArray(items) ? items : [];
+      for (const item of itemArray) {
+        const classified = classifyFolderBasedItem(item, this.packageIndex);
+        const bucket = ensureBucket(classified.namespaceKey, classified.packageKey, typeName, classified.packageType);
+        bucket.folderItems.push(item);
+      }
+    }
+
+    const localLabel = this.packageIndex.orgNamespace || LOCAL_NAMESPACE_LABEL;
+    const namespaceRows: any[] = [];
+
+    const sortedNamespaces = Array.from(tree.keys()).sort((a, b) => {
+      if (a === localLabel) return -1;
+      if (b === localLabel) return 1;
+      return a.localeCompare(b);
+    });
+
+    for (const nsKey of sortedNamespaces) {
+      const nsMap = tree.get(nsKey)!;
+      const sortedPackages = Array.from(nsMap.keys()).sort((a, b) => {
+        if (a === UNPACKAGED_LABEL) return -1;
+        if (b === UNPACKAGED_LABEL) return 1;
+        return a.localeCompare(b);
+      });
+
+      const packageRows: any[] = [];
+      for (const pkgKey of sortedPackages) {
+        const pkgMap = nsMap.get(pkgKey)!;
+        const sortedTypes = Array.from(pkgMap.keys()).sort();
+        const typeRows: any[] = [];
+        const isUnpackaged = pkgKey === UNPACKAGED_LABEL;
+        const displayPkgName = isUnpackaged ? "" : pkgKey;
+        const pkgType = packageTypeLabels.get(nsKey)?.get(pkgKey) ?? "unpackaged";
+
+        for (const typeName of sortedTypes) {
+          const bucket = pkgMap.get(typeName)!;
+          const typeObj = typeObjMap.get(typeName);
+          if (!typeObj) continue;
+
+          const typeId = `type_${nsKey}_${pkgKey}_${typeName}`;
+          const children: any[] = bucket.items.map((item: any) => ({
+            id: item.fullName,
+            fullName: item.fullName,
+            metadataType: item.type,
+            type: item.type,
+            namespace: nsKey,
+            packageName: displayPkgName,
+            packageType: pkgType,
+            componentName: item.fullName,
+            lastModifiedDate: item.lastModifiedDate,
+            lastModifiedByName: item.lastModifiedByName
+          }));
+
+          typeRows.push({
+            id: typeId,
+            label: typeObj.xmlName,
+            metadataType: typeObj.xmlName,
+            namespace: nsKey,
+            packageName: displayPkgName,
+            packageType: pkgType,
+            statusIcon: "✅",
+            _children: children.length > 0 ? children : undefined
+          });
+        }
+        packageRows.push({
+          id: `pkg_${nsKey}_${displayPkgName}`,
+          label: displayPkgName || pkgKey,
+          packageType: pkgType,
+          namespace: nsKey,
+          packageName: displayPkgName,
+          statusIcon: "✅",
+          _children: typeRows.length > 0 ? typeRows : undefined
+        });
+      }
+
+      const nsDisplayType = nsKey === localLabel ? "Local" : "Managed";
+      namespaceRows.push({
+        id: `ns_${nsKey}`,
+        label: nsKey,
+        packageType: nsDisplayType,
+        namespace: nsKey,
+        statusIcon: "✅",
+        _children: packageRows.length > 0 ? packageRows : undefined
+      });
+    }
+
+    return namespaceRows.length > 0 ? namespaceRows : undefined;
+  }
+
+  private getChildrenForType(typeObj: any): any[] {
+    const items = this.metadataItemsByType.get(typeObj.xmlName);
+    if (!items) return [];
+    const result = items.result || items;
+    const arr = Array.isArray(result) ? result : [];
+    return arr.map((item: any) => ({
+      id: item.fullName,
+      fullName: item.fullName,
+      metadataType: item.type,
+      type: item.type,
+      lastModifiedDate: item.lastModifiedDate,
+      lastModifiedByName: item.lastModifiedByName
+    }));
+  }
+
+  async discoverPackages(orgNamespace: string): Promise<void> {
+    let installedPkgs: any[] = [];
+    let package2s: any[] = [];
+    let package2Members: any[] = [];
+
+    try {
+      const [installedResult, pkg2Result] = await Promise.all([
+        this.executeCommand("queryInstalledPackages").catch(() => null),
+        this.executeCommand("queryPackage2").catch(() => null)
+      ]);
+
+      if (installedResult?.stdout) {
+        try {
+          const parsed = JSON.parse(installedResult.stdout);
+          if (parsed.status === 0) {
+            installedPkgs = parsed.result?.records ?? [];
+          }
+        } catch { /* noop */ }
+      }
+
+      if (pkg2Result?.stdout) {
+        try {
+          const parsed = JSON.parse(pkg2Result.stdout);
+          if (parsed.status === 0) {
+            package2s = parsed.result?.records ?? [];
+          }
+        } catch { /* noop */ }
+      }
+
+      const hasNoNsInstalledPkg = installedPkgs.some(
+        (p: any) => !p.SubscriberPackage?.NamespacePrefix
+      );
+      if (package2s.length > 0 || hasNoNsInstalledPkg) {
+        try {
+          const membersResult = await this.executeCommand("queryPackage2Members");
+          if (membersResult?.stdout) {
+            const parsed = JSON.parse(membersResult.stdout);
+            if (parsed.status === 0) {
+              package2Members = parsed.result?.records ?? [];
+            }
+          }
+        } catch { /* noop */ }
+      }
+    } catch { /* noop */ }
+
+    this.packageIndex = buildPackageIndex(installedPkgs, package2s, package2Members, orgNamespace);
+    this.packageDiscoveryComplete = true;
+    this.refresh();
+  }
+
   executeCommand = jest.fn();
   refresh = jest.fn();
 }

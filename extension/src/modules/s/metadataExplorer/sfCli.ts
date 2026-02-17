@@ -35,7 +35,10 @@ export const COMMAND_PREFIX = {
   sfDataQueryEmailTemplates: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName, Folder.NamespacePrefix, FolderId FROM EmailTemplate"`,
   sfDataQueryReports: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, FolderName, OwnerId FROM Report ORDER BY Name"`,
   sfDataQueryDashboards: `sf data query --query "SELECT Id, Title, DeveloperName, NamespacePrefix, LastModifiedDate, FolderName, FolderId FROM Dashboard ORDER BY Title"`,
-  sfDataQueryDocuments: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName, FolderId FROM Document ORDER BY Name"`
+  sfDataQueryDocuments: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName, FolderId FROM Document ORDER BY Name"`,
+  sfQueryInstalledPackages: `sf data query --use-tooling-api --query "SELECT Id, SubscriberPackageId, SubscriberPackage.NamespacePrefix, SubscriberPackage.Name FROM InstalledSubscriberPackage ORDER BY SubscriberPackage.NamespacePrefix"`,
+  sfQueryPackage2: `sf data query --use-tooling-api --query "SELECT Id, Name, NamespacePrefix, ContainerOptions FROM Package2 ORDER BY NamespacePrefix"`,
+  sfQueryPackage2Members: `sf data query --use-tooling-api --query "SELECT Id, Package2Id, SubjectId, SubjectKeyPrefix FROM Package2Member"`
 };
 
 /**
@@ -101,7 +104,19 @@ export const COMMANDS = {
           `Unsupported folder-based metadata type: ${metadataType}`
         );
     }
-  }
+  },
+  /**
+   * Command to query installed managed packages via the Tooling API.
+   */
+  queryInstalledPackages: `${COMMAND_PREFIX.sfQueryInstalledPackages} ${JSON_FLAG}`,
+  /**
+   * Command to query Package2 (2GP) records via the Tooling API.
+   */
+  queryPackage2: `${COMMAND_PREFIX.sfQueryPackage2} ${JSON_FLAG}`,
+  /**
+   * Command to query Package2Member records via the Tooling API.
+   */
+  queryPackage2Members: `${COMMAND_PREFIX.sfQueryPackage2Members} ${JSON_FLAG}`
 };
 
 /**
@@ -351,6 +366,51 @@ export interface FolderBasedMetadataResponse {
   status: number;
   result: {
     records: FolderBasedMetadataItem[];
+    totalSize: number;
+    done: boolean;
+  };
+  warnings: string[];
+}
+
+/**
+ * Represents an installed managed package record from the Tooling API.
+ */
+export interface InstalledSubscriberPackageRecord {
+  Id: string;
+  SubscriberPackageId: string;
+  SubscriberPackage: {
+    NamespacePrefix: string;
+    Name: string;
+  };
+}
+
+/**
+ * Represents a second-generation package (Package2) record from the Tooling API.
+ */
+export interface Package2Record {
+  Id: string;
+  Name: string;
+  NamespacePrefix: string;
+  ContainerOptions: string;
+}
+
+/**
+ * Represents a Package2Member record mapping a component to a Package2.
+ */
+export interface Package2MemberRecord {
+  Id: string;
+  Package2Id: string;
+  SubjectId: string;
+  SubjectKeyPrefix: string;
+}
+
+/**
+ * Generic Tooling API query response shape.
+ */
+export interface ToolingQueryResponse<T> {
+  status: number;
+  result: {
+    records: T[];
     totalSize: number;
     done: boolean;
   };
