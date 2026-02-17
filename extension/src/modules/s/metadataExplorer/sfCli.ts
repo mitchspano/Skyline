@@ -32,7 +32,13 @@ export const COMMAND_PREFIX = {
   sfOrgListMetadata: `sf org list metadata --metadata-type`,
   sfProjectRetrieveStart: `sf project retrieve start`,
   sfDataQueryFieldDefinitions: `sf data query --query "SELECT QualifiedApiName, LastModifiedDate, LastModifiedBy.Name, Id FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN `,
-  sfDataQueryEmailTemplates: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName, Folder.NamespacePrefix, FolderId FROM EmailTemplate"`
+  sfDataQueryEmailTemplates: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName, Folder.NamespacePrefix, FolderId FROM EmailTemplate"`,
+  sfDataQueryReports: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, FolderName, OwnerId FROM Report ORDER BY Name"`,
+  sfDataQueryDashboards: `sf data query --query "SELECT Id, Title, DeveloperName, NamespacePrefix, LastModifiedDate, FolderName, FolderId FROM Dashboard ORDER BY Title"`,
+  sfDataQueryDocuments: `sf data query --query "SELECT Id, Name, DeveloperName, NamespacePrefix, LastModifiedDate, LastModifiedBy.Name, Folder.DeveloperName, FolderId FROM Document ORDER BY Name"`,
+  sfQueryInstalledPackages: `sf data query --use-tooling-api --query "SELECT Id, SubscriberPackageId, SubscriberPackage.NamespacePrefix, SubscriberPackage.Name FROM InstalledSubscriberPackage ORDER BY SubscriberPackage.NamespacePrefix"`,
+  sfQueryPackage2: `sf data query --use-tooling-api --query "SELECT Id, Name, NamespacePrefix, ContainerOptions FROM Package2 ORDER BY NamespacePrefix"`,
+  sfQueryPackage2Members: `sf data query --use-tooling-api --query "SELECT Id, Package2Id, SubjectId, SubjectKeyPrefix FROM Package2Member"`
 };
 
 /**
@@ -87,12 +93,30 @@ export const COMMANDS = {
     switch (metadataType) {
       case "EmailTemplate":
         return `${COMMAND_PREFIX.sfDataQueryEmailTemplates} ${JSON_FLAG}`;
+      case "Report":
+        return `${COMMAND_PREFIX.sfDataQueryReports} ${JSON_FLAG}`;
+      case "Dashboard":
+        return `${COMMAND_PREFIX.sfDataQueryDashboards} ${JSON_FLAG}`;
+      case "Document":
+        return `${COMMAND_PREFIX.sfDataQueryDocuments} ${JSON_FLAG}`;
       default:
         throw new Error(
           `Unsupported folder-based metadata type: ${metadataType}`
         );
     }
-  }
+  },
+  /**
+   * Command to query installed managed packages via the Tooling API.
+   */
+  queryInstalledPackages: `${COMMAND_PREFIX.sfQueryInstalledPackages} ${JSON_FLAG}`,
+  /**
+   * Command to query Package2 (2GP) records via the Tooling API.
+   */
+  queryPackage2: `${COMMAND_PREFIX.sfQueryPackage2} ${JSON_FLAG}`,
+  /**
+   * Command to query Package2Member records via the Tooling API.
+   */
+  queryPackage2Members: `${COMMAND_PREFIX.sfQueryPackage2Members} ${JSON_FLAG}`
 };
 
 /**
@@ -274,6 +298,12 @@ interface User {
   Name?: string;
 }
 
+/**
+ * Normalized representation of a folder-based metadata item.
+ * Different types (EmailTemplate, Report, Dashboard, Document) have
+ * varying SOQL shapes; they are normalized into this interface in
+ * metadataExplorer.ts after the query returns.
+ */
 export interface FolderBasedMetadataItem {
   Id: string;
   Name: string;
@@ -282,7 +312,7 @@ export interface FolderBasedMetadataItem {
   LastModifiedDate: string;
   LastModifiedBy: {
     Name: string;
-  };
+  } | null;
   Folder: {
     DeveloperName: string;
     NamespacePrefix?: string;
@@ -290,10 +320,97 @@ export interface FolderBasedMetadataItem {
   FolderId: string;
 }
 
+/**
+ * Raw record shape returned by SOQL for a Report.
+ */
+export interface ReportRecord {
+  Id: string;
+  Name: string;
+  DeveloperName: string;
+  NamespacePrefix?: string;
+  LastModifiedDate: string;
+  LastModifiedBy?: { Name: string } | null;
+  FolderName: string;
+  OwnerId: string;
+}
+
+/**
+ * Raw record shape returned by SOQL for a Dashboard.
+ * Note: Dashboard uses "Title" for display name, not "Name".
+ */
+export interface DashboardRecord {
+  Id: string;
+  Title: string;
+  DeveloperName: string;
+  NamespacePrefix?: string;
+  LastModifiedDate: string;
+  FolderName: string;
+  FolderId: string;
+}
+
+/**
+ * Raw record shape returned by SOQL for a Document.
+ */
+export interface DocumentRecord {
+  Id: string;
+  Name: string;
+  DeveloperName: string;
+  NamespacePrefix?: string;
+  LastModifiedDate: string;
+  LastModifiedBy?: { Name: string } | null;
+  Folder: { DeveloperName: string } | null;
+  FolderId: string;
+}
+
 export interface FolderBasedMetadataResponse {
   status: number;
   result: {
     records: FolderBasedMetadataItem[];
+    totalSize: number;
+    done: boolean;
+  };
+  warnings: string[];
+}
+
+/**
+ * Represents an installed managed package record from the Tooling API.
+ */
+export interface InstalledSubscriberPackageRecord {
+  Id: string;
+  SubscriberPackageId: string;
+  SubscriberPackage: {
+    NamespacePrefix: string;
+    Name: string;
+  };
+}
+
+/**
+ * Represents a second-generation package (Package2) record from the Tooling API.
+ */
+export interface Package2Record {
+  Id: string;
+  Name: string;
+  NamespacePrefix: string;
+  ContainerOptions: string;
+}
+
+/**
+ * Represents a Package2Member record mapping a component to a Package2.
+ */
+export interface Package2MemberRecord {
+  Id: string;
+  Package2Id: string;
+  SubjectId: string;
+  SubjectKeyPrefix: string;
+}
+
+/**
+ * Generic Tooling API query response shape.
+ */
+export interface ToolingQueryResponse<T> {
+  status: number;
+  result: {
+    records: T[];
     totalSize: number;
     done: boolean;
   };

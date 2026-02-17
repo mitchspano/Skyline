@@ -47,16 +47,6 @@
         class="slds-p-horizontal_medium"
         slot="actions"
       ></lightning-button-icon-stateful>
-      <template lwc:if={metadataTypeOptions}>
-        <lightning-combobox
-          name="selectedMetadataType"
-          label="Select Metadata Type"
-          value={selectedMetadataTypeValue}
-          options={metadataTypeOptions}
-          onchange={handleMetadataTypeSelection}
-          class="slds-m-around_medium"
-        ></lightning-combobox>
-      </template>
       <template lwc:if={filterState}>
         <lightning-layout horizontal-align="space">
           <lightning-layout-item flexibility="auto" padding="around-small">
@@ -96,6 +86,19 @@
             </lightning-input>
           </lightning-layout-item>
         </lightning-layout>
+      </template>
+
+      <template lwc:if={showRetrievalProgress}>
+        <div class="slds-p-horizontal_medium slds-p-bottom_small">
+          <p class="slds-text-body_regular">
+            <strong>{retrievalProgressText}</strong>
+          </p>
+          <template lwc:if={nowRetrievingText}>
+            <p class="slds-text-body_small slds-text-color_default">
+              {nowRetrievingText}
+            </p>
+          </template>
+        </div>
       </template>
 
       <template lwc:if={rows}>
