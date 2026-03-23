@@ -7,7 +7,8 @@ module.exports = {
     "^.+\\.ts$": [
       "ts-jest",
       {
-        tsconfig: "tsconfig.test.json"
+        tsconfig: "tsconfig.test.json",
+        isolatedModules: true
       }
     ]
   },
@@ -17,6 +18,7 @@ module.exports = {
     "^lwc$": "<rootDir>/src/test/mocks/lwc.ts",
     "^vscode$": "<rootDir>/src/test/mocks/vscode.ts",
     "^child_process$": "<rootDir>/src/test/mocks/child_process.ts",
+    "^d3$": "<rootDir>/src/test/mocks/d3.ts",
     "^../../modules/s/app/app$": "<rootDir>/src/test/mocks/app.ts",
     "^../../modules/s/cliElement/cliElement$":
       "<rootDir>/src/test/mocks/cliElement.ts",
