@@ -56,6 +56,13 @@ const mockLwc = {
 (global as any).vscode = mockVscode;
 (global as any).exec = mockChildProcess.exec;
 
+// Mock acquireVsCodeApi
+(global as any).acquireVsCodeApi = jest.fn(() => ({
+  postMessage: jest.fn(),
+  setState: jest.fn(),
+  getState: jest.fn()
+}));
+
 // Mock document and window properly
 Object.defineProperty(global, "document", {
   value: {
